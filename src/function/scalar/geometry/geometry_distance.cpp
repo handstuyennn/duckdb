@@ -77,4 +77,4 @@ void GeometryDistance::RegisterFunction(BuiltinFunctions &set) {
     set.AddFunction(distance);
 }
 
-} // duckdb
+} // namespace duckdb

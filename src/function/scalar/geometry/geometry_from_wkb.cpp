@@ -71,4 +71,4 @@ void GeometryFromWKB::RegisterFunction(BuiltinFunctions &set) {
     set.AddFunction(from_text);
 }
 
-} // duckdb
+} // namespace duckdb

@@ -1,6 +1,7 @@
 #pragma one
 
 #include <inttypes.h>
+#include <cstddef>
 
 #include "json_types.hpp"
 

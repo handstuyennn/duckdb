@@ -2,6 +2,9 @@
 #include "liblwgeom/liblwgeom_internal.hpp"
 #include "liblwgeom/lwinline.hpp"
 
+#include <cassert>
+#include <cstring>
+
 namespace duckdb_postgis {
 
 float

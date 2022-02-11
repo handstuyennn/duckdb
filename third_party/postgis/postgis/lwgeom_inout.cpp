@@ -3,6 +3,9 @@
 #include "liblwgeom/gserialized.hpp"
 #include "liblwgeom/liblwgeom_internal.hpp"
 
+#include <string>
+#include <cstring>
+
 namespace duckdb_postgis {
 
 GSERIALIZED* LWGEOM_in(char *input) {

@@ -2,6 +2,7 @@
 #include "liblwgeom/lwin_wkt.hpp"
 
 #include <math.h>
+#include <cstring>
 
 namespace duckdb_postgis {
 
@@ -56,8 +57,6 @@ static uint8_t hex2char[256] = {
 * Internal function declarations.
 */
 LWGEOM* lwgeom_from_wkb_state(wkb_parse_state *s);
-
-static uint8_t* empty_to_wkb_buf(const LWGEOM *geom, uint8_t *buf, uint8_t variant);
 
 /**
 * Check that we are not about to read off the end of the WKB

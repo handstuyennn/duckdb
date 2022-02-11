@@ -2,6 +2,9 @@
 #include "liblwgeom/lwinline.hpp"
 #include "liblwgeom/liblwgeom_internal.hpp"
 
+#include <cstring>
+#include <cassert>
+
 namespace duckdb_postgis {
 
 GBOX* gbox_new(lwflags_t flags)

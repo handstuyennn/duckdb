@@ -2,6 +2,8 @@
 #include "liblwgeom/lwinline.hpp"
 #include "liblwgeom/liblwgeom_internal.hpp"
 
+#include <cassert>
+
 namespace duckdb_postgis {
 
 LWGEOM *lwpoint_as_lwgeom(const LWPOINT *obj)
@@ -12,7 +14,7 @@ LWGEOM *lwpoint_as_lwgeom(const LWPOINT *obj)
 
 void lwgeom_set_srid(LWGEOM *geom, int32_t srid)
 {
-	uint32_t i;
+	// uint32_t i;
 
 	geom->srid = srid;
 

@@ -1,4 +1,5 @@
 #include "liblwgeom/gserialized2.hpp"
+#include <cassert>
 
 namespace duckdb_postgis {
 

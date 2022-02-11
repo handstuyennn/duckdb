@@ -10,7 +10,9 @@ namespace duckdb_postgis {
  * for portability.  Don't use "offsetof(struct s, f[0])", as this doesn't
  * work with MSVC and with C++ compilers.
  */
+#ifndef FLEXIBLE_ARRAY_MEMBER
 #define FLEXIBLE_ARRAY_MEMBER 1	/* empty */
+#endif
 
 /* PROJ library version */
 // #define POSTGIS_PROJ_VERSION 82

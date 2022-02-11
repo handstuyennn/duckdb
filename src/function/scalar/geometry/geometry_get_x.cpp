@@ -34,4 +34,4 @@ void GeometryGetX::RegisterFunction(BuiltinFunctions &set) {
     set.AddFunction(get_x);
 }
 
-} // duckdb
+} // namespace duckdb
