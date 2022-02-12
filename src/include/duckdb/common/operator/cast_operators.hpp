@@ -662,7 +662,7 @@ struct TryCastToGeometry {
 
 template <>
 bool TryCastToGeometry::Operation(string_t input, string_t &result, Vector &result_vector, string *error_message,
-                              bool strict);
+                                  bool strict);
 
 //===--------------------------------------------------------------------===//
 // UUID

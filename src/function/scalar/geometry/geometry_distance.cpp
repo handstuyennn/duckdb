@@ -56,7 +56,6 @@ static void GeometryDistanceTernaryExecutor(Vector &geom1, Vector &geom2, Vector
 	                                         GeometryDistanceTernaryOperator::Operation<TA, TB, TC, TR>);
 }
 
-
 static void GeometryDistanceFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &geom1_arg = args.data[0];
 	auto &geom2_arg = args.data[1];

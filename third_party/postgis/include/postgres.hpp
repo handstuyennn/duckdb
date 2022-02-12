@@ -5,13 +5,13 @@ namespace duckdb_postgis {
 /*
  * We require C99, hence the compiler should understand flexible array
  * members.  However, for documentation purposes we still consider it to be
- * project style to write "field[FLEXIBLE_ARRAY_MEMBER]" not just "field[]".
+ * project style to write "field[PG_FLEXIBLE_ARRAY_MEMBER]" not just "field[]".
  * When computing the size of such an object, use "offsetof(struct s, f)"
  * for portability.  Don't use "offsetof(struct s, f[0])", as this doesn't
  * work with MSVC and with C++ compilers.
  */
-#ifndef FLEXIBLE_ARRAY_MEMBER
-#define FLEXIBLE_ARRAY_MEMBER 1	/* empty */
+#ifndef PG_FLEXIBLE_ARRAY_MEMBER
+#define PG_FLEXIBLE_ARRAY_MEMBER 1	/* empty */
 #endif
 
 /* PROJ library version */
@@ -64,21 +64,21 @@ typedef union
 	struct						/* Normal varlena (4-byte length) */
 	{
 		uint32		va_header;
-		char		va_data[FLEXIBLE_ARRAY_MEMBER];
+		char		va_data[PG_FLEXIBLE_ARRAY_MEMBER];
 	}			va_4byte;
 	struct						/* Compressed-in-line format */
 	{
 		uint32		va_header;
 		uint32		va_tcinfo;	/* Original data size (excludes header) and
 								 * compression method; see va_extinfo */
-		char		va_data[FLEXIBLE_ARRAY_MEMBER]; /* Compressed data */
+		char		va_data[PG_FLEXIBLE_ARRAY_MEMBER]; /* Compressed data */
 	}			va_compressed;
 } varattrib_4b;
 
 typedef struct
 {
 	uint8		va_header;
-	char		va_data[FLEXIBLE_ARRAY_MEMBER]; /* Data begins here */
+	char		va_data[PG_FLEXIBLE_ARRAY_MEMBER]; /* Data begins here */
 } varattrib_1b;
 
 /* TOAST pointers are a subset of varattrib_1b with an identifying tag byte */
@@ -86,7 +86,7 @@ typedef struct
 {
 	uint8		va_header;		/* Always 0x80 or 0x01 */
 	uint8		va_tag;			/* Type of datum */
-	char		va_data[FLEXIBLE_ARRAY_MEMBER]; /* Type-specific data */
+	char		va_data[PG_FLEXIBLE_ARRAY_MEMBER]; /* Type-specific data */
 } varattrib_1b_e;
 
 /*

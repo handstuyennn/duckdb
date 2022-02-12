@@ -3,6 +3,7 @@
 #include "json_util.hpp"
 
 #include <cstring>
+#include <cstdlib>
 
 namespace json
 {

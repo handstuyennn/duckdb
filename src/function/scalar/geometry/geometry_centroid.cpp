@@ -39,7 +39,6 @@ static void GeometryCentroidBinaryExecutor(Vector &geom, Vector &use_spheroid, V
 	BinaryExecutor::ExecuteStandard<TA, TB, TR, CentroidBinaryOperator>(geom, use_spheroid, result, count);
 }
 
-
 static void GeometryCentroidFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &geom_arg = args.data[0];
 	if (args.data.size() == 1) {

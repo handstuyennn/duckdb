@@ -49,7 +49,6 @@ static void GeometryFromWKBBinaryExecutor(Vector &text, Vector &srid, Vector &re
 	BinaryExecutor::ExecuteStandard<TA, TB, TR, FromWKBBinaryOperator>(text, srid, result, count);
 }
 
-
 static void GeometryFromWKBFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &text_arg = args.data[0];
 	if (args.data.size() == 1) {

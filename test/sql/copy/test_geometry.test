@@ -1,6 +1,6 @@
-# name: test/sql/copy/csv/test_geometry.test
+# name: test/sql/copy/test_geometry.test
 # description: Test GEOMETRY with COPY INTO
-# group: [csv]
+# group: [copy]
 
 # COPY INTO
 statement ok

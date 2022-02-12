@@ -49,7 +49,6 @@ static void GeometryFromTextBinaryExecutor(Vector &text, Vector &srid, Vector &r
 	BinaryExecutor::ExecuteStandard<TA, TB, TR, FromTextBinaryOperator>(text, srid, result, count);
 }
 
-
 static void GeometryFromTextFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &text_arg = args.data[0];
 	if (args.data.size() == 1) {
