@@ -37,6 +37,9 @@
 
 namespace duckdb_postgis {
 
+#ifndef _LIBLWGEOM_H
+#define _LIBLWGEOM_H 1
+
 #if POSTGIS_PROJ_VERSION < 49
 /* Use the old (pre-2.2) geodesic functions */
 #undef PROJ_GEODESIC
@@ -753,5 +756,7 @@ void lwerror(const char *fmt, ...);
 extern lwvarlena_t* lwgeom_to_geojson(const LWGEOM *geo, const char *srs, int precision, int has_bbox);
 
 extern int lwgeom_startpoint(const LWGEOM* lwgeom, POINT4D* pt);
+
+#endif /* !defined _LIBLWGEOM_H  */
 
 } // namespace duckdb_postgis

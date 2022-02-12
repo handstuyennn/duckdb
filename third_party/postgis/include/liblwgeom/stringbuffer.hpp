@@ -30,6 +30,9 @@
 
 namespace duckdb_postgis {
 
+#ifndef _STRINGBUFFER_H
+#define _STRINGBUFFER_H 1
+
 #define STRINGBUFFER_STARTSIZE 128
 
 typedef struct
@@ -92,4 +95,6 @@ stringbuffer_append_double(stringbuffer_t *s, double d, int precision)
 	stringbuffer_makeroom(s, OUT_MAX_BYTES_DOUBLE);
 	s->str_end += lwprint_double(d, precision, s->str_end);
 }
+#endif /* _STRINGBUFFER_H */
+
 }
