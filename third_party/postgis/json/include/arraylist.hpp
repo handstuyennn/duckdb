@@ -6,6 +6,9 @@
 namespace json
 {
 
+#ifndef _json_c_arraylist_h_
+#define _json_c_arraylist_h_
+
 #define ARRAY_LIST_DEFAULT_SIZE 32
 
 typedef void(array_list_free_fn)(void *data);
@@ -47,5 +50,7 @@ extern void array_list_free(struct array_list *al);
 extern int array_list_shrink(struct array_list *arr, size_t empty_slots);
 
 extern int array_list_add(struct array_list *al, void *data);
+
+#endif
 
 } // namespace json
