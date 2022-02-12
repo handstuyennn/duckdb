@@ -3,6 +3,7 @@
 #include <stdlib.h> // pulls in declaration of malloc, free
 #include <string.h> // pulls in declaration for strlen.
 #include <limits.h>
+#include <cstring>
 
 namespace json
 {

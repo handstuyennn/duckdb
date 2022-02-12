@@ -1,6 +1,9 @@
 #include "liblwgeom/lwgeom_wkt.hpp"
 #include "liblwgeom/lwinline.hpp"
 
+#include <cstring>
+#include <stddef.h> // for ptrdiff_t
+
 namespace duckdb_postgis {
 
 /*

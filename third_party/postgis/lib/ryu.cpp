@@ -1,4 +1,5 @@
 #include "lib/ryu.hpp"
+#include <cstring>
 
 namespace duckdb_postgis {
 

@@ -11,7 +11,7 @@ struct CentroidUnaryOperator {
 		// auto base = postgis.LWGEOM_base(gser);
 		// auto size = postgis.LWGEOM_size(gser);
 		// postgis.LWGEOM_free(gser);
- 		// return string_t(base, size);
+		// return string_t(base, size);
 		return string_t(geom.GetDataUnsafe(), geom.GetSize());
 	}
 };

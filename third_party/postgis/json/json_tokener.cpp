@@ -2,6 +2,8 @@
 #include "json_object.hpp"
 #include "json_util.hpp"
 
+#include <cstring>
+
 namespace json
 {
 

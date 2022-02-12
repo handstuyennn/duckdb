@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <cassert>
+#include <cstring>
 
 namespace duckdb_postgis {
 

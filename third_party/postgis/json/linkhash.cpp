@@ -4,6 +4,7 @@
 #include <cassert>
 #include <string.h>
 #include <limits.h>
+#include <cstring>
 
 namespace json
 {

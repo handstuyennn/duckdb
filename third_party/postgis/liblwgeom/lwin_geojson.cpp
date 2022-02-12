@@ -2,6 +2,7 @@
 #include "liblwgeom/lwinline.hpp"
 
 #include "json.hpp"
+#include <cstring>
 
 using namespace json;
 

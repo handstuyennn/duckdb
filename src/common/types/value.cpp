@@ -570,7 +570,7 @@ Value Value::BLOB(const string &data) {
 Value Value::GEOMETRY(const string &data) {
 	Value result(LogicalType::GEOMETRY);
 	result.is_null = false;
-	if (data.size() == 0) {
+	if (data.empty()) {
 		result.str_value = data;
 	} else {
 		result.str_value = Geometry::ToGeometry(string_t(data));
@@ -1361,7 +1361,7 @@ string Value::ToString() const {
 		return values_insert_order.GetValue(enum_idx).ToString();
 	}
 	case LogicalTypeId::GEOMETRY: {
-		if (str_value.size() == 0) {
+		if (str_value.empty()) {
 			return str_value;
 		}
 		auto str = Geometry::ToString(string_t(str_value));

@@ -1,5 +1,7 @@
 #include "liblwgeom/stringbuffer.hpp"
 
+#include <cstring>
+
 namespace duckdb_postgis {
 
 static void

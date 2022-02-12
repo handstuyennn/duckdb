@@ -3,13 +3,13 @@
 namespace duckdb {
 
 void BuiltinFunctions::RegisterGeometryFunctions() {
-    Register<MakePointFun>();
-    Register<GeometryFromText>();
-    Register<GeometryFromWKB>();
-    Register<GeometryAsText>();
-    Register<GeometryGetX>();
-    Register<GeometryCentroid>();
-    Register<GeometryDistance>();
+	Register<MakePointFun>();
+	Register<GeometryFromText>();
+	Register<GeometryFromWKB>();
+	Register<GeometryAsText>();
+	Register<GeometryGetX>();
+	Register<GeometryCentroid>();
+	Register<GeometryDistance>();
 }
 
-}
+} // namespace duckdb

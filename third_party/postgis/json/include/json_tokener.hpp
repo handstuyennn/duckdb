@@ -1,6 +1,7 @@
 #pragma one
 
 #include "printbuf.hpp"
+#include <cstring>
 
 namespace json
 {

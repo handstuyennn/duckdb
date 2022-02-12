@@ -1,6 +1,8 @@
 #include "liblwgeom/liblwgeom_internal.hpp"
 #include "liblwgeom/lwinline.hpp"
 
+#include <cstring>
+
 namespace duckdb_postgis {
 
 static size_t pointArray_geojson_size(POINTARRAY *pa, int precision);

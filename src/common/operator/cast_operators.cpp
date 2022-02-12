@@ -1337,7 +1337,7 @@ bool TryCastToGeometry::Operation(string_t input, string_t &result, Vector &resu
 		Geometry::ToGeometry(gser, (data_ptr_t)result.GetDataWriteable());
 		Geometry::DestroyGeometry(gser);
 		result.Finalize();
-	} catch(const std::exception &e) {
+	} catch (const std::exception &e) {
 		if (gser) {
 			Geometry::DestroyGeometry(gser);
 		}

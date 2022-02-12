@@ -1,6 +1,8 @@
 #include "printbuf.hpp"
 #include "linkhash.hpp"
 
+#include <cstring>
+
 namespace json
 {
 const char *json_hex_chars = "0123456789abcdefABCDEF";

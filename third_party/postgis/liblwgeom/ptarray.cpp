@@ -1,6 +1,8 @@
 #include "liblwgeom/liblwgeom.hpp"
 #include "liblwgeom/lwinline.hpp"
 
+#include <cstring>
+
 namespace duckdb_postgis {
 
 void
