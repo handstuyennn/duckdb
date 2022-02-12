@@ -3,6 +3,8 @@
 #include "liblwgeom/liblwgeom_internal.hpp"
 
 #include <math.h>
+#include <cstring>
+#include <cassert>
 
 namespace duckdb_postgis {
 

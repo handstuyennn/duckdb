@@ -1,5 +1,6 @@
 #include "liblwgeom/gserialized2.hpp"
 #include <cassert>
+#include <cstring>
 
 namespace duckdb_postgis {
 
@@ -124,7 +125,7 @@ void gserialized2_set_srid(GSERIALIZED *g, int32_t srid)
 
 static size_t gserialized2_is_empty_recurse(const uint8_t *p, int *isempty)
 {
-	int i;
+	// int i;
 	int32_t type, num;
 
 	memcpy(&type, p, 4);

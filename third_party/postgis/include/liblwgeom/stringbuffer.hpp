@@ -26,6 +26,7 @@
 #pragma once
 #include "liblwgeom/liblwgeom_internal.hpp"
 #include <stdarg.h>
+#include <cstring>
 
 namespace duckdb_postgis {
 

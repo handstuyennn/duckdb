@@ -190,9 +190,9 @@ static inline const char *get_string_component(const struct json_object *jso)
 static int json_object_string_to_json_string(struct json_object *jso, struct printbuf *pb,
                                              int level, int flags)
 {
-	ssize_t len = JC_STRING(jso)->len;
+	std::ptrdiff_t len = JC_STRING(jso)->len;
 	printbuf_strappend(pb, "\"");
-	json_escape_str(pb, get_string_component(jso), len < 0 ? -(ssize_t)len : len, flags);
+	json_escape_str(pb, get_string_component(jso), len < 0 ? -(std::ptrdiff_t)len : len, flags);
 	printbuf_strappend(pb, "\"");
 	return 0;
 }
