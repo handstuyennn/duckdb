@@ -1,12 +1,20 @@
 #include "json_tokener.hpp"
 #include "json_object.hpp"
 #include "json_util.hpp"
+#include "config.hpp"
 
 #include <cstring>
 #include <cstdlib>
 
 namespace json
 {
+
+#if !HAVE_STRNCASECMP && defined(_MSC_VER)
+/* MSC has the version as _strnicmp */
+#define strncasecmp _strnicmp
+#elif !HAVE_STRNCASECMP
+#error You do not have strncasecmp on your system.
+#endif /* HAVE_STRNCASECMP */
 
 static const char *json_tokener_errors[] = {
 	"success",

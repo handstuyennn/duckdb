@@ -2,17 +2,9 @@
 
 #include "printbuf.hpp"
 #include <cstring>
-#include "config.hpp"
 
 namespace json
 {
-
-#if !HAVE_STRNCASECMP && defined(_MSC_VER)
-/* MSC has the version as _strnicmp */
-#define strncasecmp _strnicmp
-#elif !HAVE_STRNCASECMP
-#error You do not have strncasecmp on your system.
-#endif /* HAVE_STRNCASECMP */
 
 enum json_tokener_error
 {
