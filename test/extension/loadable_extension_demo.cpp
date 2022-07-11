@@ -16,11 +16,11 @@ inline string_t hello_fun(string_t what) {
 
 namespace duckdb {
 
-inline void TestAliasHello(DataChunk &args, ExpressionState &state, Vector &result) {
+DUCKDB_API inline void TestAliasHello(DataChunk &args, ExpressionState &state, Vector &result) {
 	result.Reference(Value("Hello Alias!"));
 }
 
-inline void AddPointFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+DUCKDB_API inline void AddPointFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &left_vector = args.data[0];
 	auto &right_vector = args.data[1];
 	const int count = args.size();
@@ -59,7 +59,7 @@ inline void AddPointFunction(DataChunk &args, ExpressionState &state, Vector &re
 	result.Verify(count);
 }
 
-inline void SubPointFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+DUCKDB_API inline void SubPointFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &left_vector = args.data[0];
 	auto &right_vector = args.data[1];
 	const int count = args.size();
