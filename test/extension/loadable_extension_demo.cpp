@@ -248,12 +248,14 @@ DUCKDB_EXTENSION_API void loadable_extension_demo_init(duckdb::DatabaseInstance 
 	LogicalType::SetCatalog(target_type, entry);
 
 	// Function add point
-	duckdb::ScalarFunction add_point_func("add_point", {target_type, target_type}, target_type, duckdb::AddPointFunction);
+	duckdb::ScalarFunction add_point_func("add_point", {target_type, target_type}, target_type,
+	                                      duckdb::AddPointFunction);
 	duckdb::CreateScalarFunctionInfo add_point_info(add_point_func);
 	catalog.CreateFunction(client_context, &add_point_info);
 
 	// Function sub point
-	duckdb::ScalarFunction sub_point_func("sub_point", {target_type, target_type}, target_type, duckdb::SubPointFunction);
+	duckdb::ScalarFunction sub_point_func("sub_point", {target_type, target_type}, target_type,
+	                                      duckdb::SubPointFunction);
 	duckdb::CreateScalarFunctionInfo sub_point_info(sub_point_func);
 	catalog.CreateFunction(client_context, &sub_point_info);
 
