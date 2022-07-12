@@ -14,6 +14,11 @@ inline string_t hello_fun(string_t what) {
 	return "Hello, " + what.GetString();
 }
 
+inline string_t hello_fun_custom(string_t what) {
+	auto lcase = StringUtil::Lower("Hello, " + what.GetString());
+	return lcase;
+}
+
 namespace duckdb {
 
 DUCKDB_API inline void TestAliasHello(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -284,6 +289,9 @@ DUCKDB_EXTENSION_API void loadable_extension_demo_init(duckdb::DatabaseInstance 
 	con.BeginTransaction();
 	con.CreateScalarFunction<string_t, string_t>("hello", {LogicalType(LogicalTypeId::VARCHAR)},
 	                                             LogicalType(LogicalTypeId::VARCHAR), &hello_fun);
+
+	con.CreateScalarFunction<string_t, string_t>("hello_custom", {LogicalType(LogicalTypeId::VARCHAR)},
+	                                             LogicalType(LogicalTypeId::VARCHAR), &hello_fun_custom);
 
 	point_extension.RegisterTestAliasHello(con);
 	point_extension.RegisterPointType(con);
