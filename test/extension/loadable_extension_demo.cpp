@@ -281,8 +281,6 @@ DUCKDB_EXTENSION_API void loadable_extension_demo_init(duckdb::DatabaseInstance 
 	PointExtension point_extension = PointExtension();
 	// create a scalar function
 	Connection con(db);
-	auto &client_context = *con.context;
-	auto &catalog = Catalog::GetCatalog(client_context);
 	con.BeginTransaction();
 	con.CreateScalarFunction<string_t, string_t>("hello", {LogicalType(LogicalTypeId::VARCHAR)},
 	                                             LogicalType(LogicalTypeId::VARCHAR), &hello_fun);
