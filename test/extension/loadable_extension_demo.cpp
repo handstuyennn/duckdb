@@ -14,11 +14,6 @@ inline string_t hello_fun(string_t what) {
 	return "Hello, " + what.GetString();
 }
 
-inline string_t hello_fun_custom(string_t what) {
-	auto lcase = StringUtil::Lower("Hello, " + what.GetString());
-	return lcase;
-}
-
 namespace duckdb {
 
 DUCKDB_API inline void TestAliasHello(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -110,51 +105,59 @@ public:
 
 	DUCKDB_API void RegisterTestAliasHello(Connection con) {
 		auto &client_context = *con.context;
-		auto &catalog = Catalog::GetCatalog(client_context);
+		client_context.RunFunctionInTransaction([&]() {
+			auto &catalog = Catalog::GetCatalog(client_context);
 
-		CreateScalarFunctionInfo hello_alias_info(
-		    ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
+			CreateScalarFunctionInfo hello_alias_info(
+				ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
 
-		catalog.CreateFunction(client_context, &hello_alias_info);
+			catalog.CreateFunction(client_context, &hello_alias_info);
+		});
 	}
 
 	DUCKDB_API void RegisterPointType(Connection con) {
 		auto &client_context = *con.context;
-		auto &catalog = Catalog::GetCatalog(client_context);
+		client_context.RunFunctionInTransaction([&]() {
+			auto &catalog = Catalog::GetCatalog(client_context);
 
-		// Add alias POINT type
-		string alias_name = "POINT";
-		child_list_t<LogicalType> child_types;
-		child_types.push_back(make_pair("x", LogicalType::INTEGER));
-		child_types.push_back(make_pair("y", LogicalType::INTEGER));
-		auto alias_info = make_unique<CreateTypeInfo>();
-		alias_info->name = alias_name;
-		target_type = LogicalType::STRUCT(child_types);
-		target_type.SetAlias(alias_name);
-		alias_info->type = target_type;
+			// Add alias POINT type
+			string alias_name = "POINT";
+			child_list_t<LogicalType> child_types;
+			child_types.push_back(make_pair("x", LogicalType::INTEGER));
+			child_types.push_back(make_pair("y", LogicalType::INTEGER));
+			auto alias_info = make_unique<CreateTypeInfo>();
+			alias_info->name = alias_name;
+			target_type = LogicalType::STRUCT(child_types);
+			target_type.SetAlias(alias_name);
+			alias_info->type = target_type;
 
-		auto entry = (TypeCatalogEntry *)catalog.CreateType(client_context, alias_info.get());
-		LogicalType::SetCatalog(target_type, entry);
+			auto entry = (TypeCatalogEntry *)catalog.CreateType(client_context, alias_info.get());
+			LogicalType::SetCatalog(target_type, entry);
+		});
 	}
 
 	DUCKDB_API void RegisterAddPointFunction(Connection con) {
 		auto &client_context = *con.context;
-		auto &catalog = Catalog::GetCatalog(client_context);
+		client_context.RunFunctionInTransaction([&]() {
+			auto &catalog = Catalog::GetCatalog(client_context);
 
-		// Function add point
-		ScalarFunction add_point_func("add_point", {target_type, target_type}, target_type, AddPointFunction);
-		CreateScalarFunctionInfo add_point_info(add_point_func);
-		catalog.CreateFunction(client_context, &add_point_info);
+			// Function add point
+			ScalarFunction add_point_func("add_point", {target_type, target_type}, target_type, AddPointFunction);
+			CreateScalarFunctionInfo add_point_info(add_point_func);
+			catalog.CreateFunction(client_context, &add_point_info);
+		});
 	}
 
 	DUCKDB_API void RegisterSubPointFunction(Connection con) {
 		auto &client_context = *con.context;
-		auto &catalog = Catalog::GetCatalog(client_context);
+		client_context.RunFunctionInTransaction([&]() {
+			auto &catalog = Catalog::GetCatalog(client_context);
 
-		// Function sub point
-		ScalarFunction sub_point_func("sub_point", {target_type, target_type}, target_type, SubPointFunction);
-		CreateScalarFunctionInfo sub_point_info(sub_point_func);
-		catalog.CreateFunction(client_context, &sub_point_info);
+			// Function sub point
+			ScalarFunction sub_point_func("sub_point", {target_type, target_type}, target_type, SubPointFunction);
+			CreateScalarFunctionInfo sub_point_info(sub_point_func);
+			catalog.CreateFunction(client_context, &sub_point_info);
+		});
 	}
 
 private:
@@ -289,9 +292,6 @@ DUCKDB_EXTENSION_API void loadable_extension_demo_init(duckdb::DatabaseInstance 
 	con.BeginTransaction();
 	con.CreateScalarFunction<string_t, string_t>("hello", {LogicalType(LogicalTypeId::VARCHAR)},
 	                                             LogicalType(LogicalTypeId::VARCHAR), &hello_fun);
-
-	con.CreateScalarFunction<string_t, string_t>("hello_custom", {LogicalType(LogicalTypeId::VARCHAR)},
-	                                             LogicalType(LogicalTypeId::VARCHAR), &hello_fun_custom);
 
 	point_extension.RegisterTestAliasHello(con);
 	point_extension.RegisterPointType(con);
