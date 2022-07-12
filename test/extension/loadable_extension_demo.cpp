@@ -100,14 +100,15 @@ DUCKDB_API inline void SubPointFunction(DataChunk &args, ExpressionState &state,
 
 class PointExtension {
 public:
-	PointExtension() {}
+	PointExtension() {
+	}
 
 	DUCKDB_API void RegisterTestAliasHello(Connection con) {
 		auto &client_context = *con.context;
 		auto &catalog = Catalog::GetCatalog(client_context);
 
 		CreateScalarFunctionInfo hello_alias_info(
-	    ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
+		    ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
 
 		catalog.CreateFunction(client_context, &hello_alias_info);
 	}
@@ -136,8 +137,7 @@ public:
 		auto &catalog = Catalog::GetCatalog(client_context);
 
 		// Function add point
-		ScalarFunction add_point_func("add_point", {target_type, target_type}, target_type,
-	                                      AddPointFunction);
+		ScalarFunction add_point_func("add_point", {target_type, target_type}, target_type, AddPointFunction);
 		CreateScalarFunctionInfo add_point_info(add_point_func);
 		catalog.CreateFunction(client_context, &add_point_info);
 	}
@@ -145,10 +145,9 @@ public:
 	DUCKDB_API void RegisterSubPointFunction(Connection con) {
 		auto &client_context = *con.context;
 		auto &catalog = Catalog::GetCatalog(client_context);
-		
+
 		// Function sub point
-		ScalarFunction sub_point_func("sub_point", {target_type, target_type}, target_type,
-	                                      SubPointFunction);
+		ScalarFunction sub_point_func("sub_point", {target_type, target_type}, target_type, SubPointFunction);
 		CreateScalarFunctionInfo sub_point_info(sub_point_func);
 		catalog.CreateFunction(client_context, &sub_point_info);
 	}
