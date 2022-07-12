@@ -109,7 +109,7 @@ public:
 			auto &catalog = Catalog::GetCatalog(client_context);
 
 			CreateScalarFunctionInfo hello_alias_info(
-				ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
+			    ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
 
 			catalog.CreateFunction(client_context, &hello_alias_info);
 		});
