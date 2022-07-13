@@ -225,7 +225,7 @@ DUCKDB_EXTENSION_API void loadable_extension_demo_init(duckdb::DatabaseInstance 
 	                                             LogicalType(LogicalTypeId::VARCHAR), &hello_fun);
 
 	CreateScalarFunctionInfo hello_alias_info(
-		ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
+	    ScalarFunction("test_alias_hello", {}, LogicalType::VARCHAR, TestAliasHello));
 	catalog.CreateFunction(client_context, &hello_alias_info);
 
 	// // Add alias POINT type
