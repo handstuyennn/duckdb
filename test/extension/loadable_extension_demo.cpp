@@ -57,44 +57,44 @@ inline void AddPointFunction(DataChunk &args, ExpressionState &state, Vector &re
 	result.Verify(count);
 }
 
-// DUCKDB_API inline void SubPointFunction(DataChunk &args, ExpressionState &state, Vector &result) {
-// 	auto &left_vector = args.data[0];
-// 	auto &right_vector = args.data[1];
-// 	const int count = args.size();
-// 	auto left_vector_type = left_vector.GetVectorType();
-// 	auto right_vector_type = right_vector.GetVectorType();
+inline void SubPointFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &left_vector = args.data[0];
+	auto &right_vector = args.data[1];
+	const int count = args.size();
+	auto left_vector_type = left_vector.GetVectorType();
+	auto right_vector_type = right_vector.GetVectorType();
 
-// 	VectorData lhs_data;
-// 	VectorData rhs_data;
-// 	left_vector.Orrify(count, lhs_data);
-// 	right_vector.Orrify(count, rhs_data);
+	VectorData lhs_data;
+	VectorData rhs_data;
+	left_vector.Orrify(count, lhs_data);
+	right_vector.Orrify(count, rhs_data);
 
-// 	result.SetVectorType(VectorType::FLAT_VECTOR);
-// 	auto &child_entries = StructVector::GetEntries(result);
-// 	auto &left_child_entries = StructVector::GetEntries(left_vector);
-// 	auto &right_child_entries = StructVector::GetEntries(right_vector);
-// 	for (int base_idx = 0; base_idx < count; base_idx++) {
-// 		auto lhs_list_index = lhs_data.sel->get_index(base_idx);
-// 		auto rhs_list_index = rhs_data.sel->get_index(base_idx);
-// 		if (!lhs_data.validity.RowIsValid(lhs_list_index) || !rhs_data.validity.RowIsValid(rhs_list_index)) {
-// 			FlatVector::SetNull(result, base_idx, true);
-// 			continue;
-// 		}
-// 		for (size_t col = 0; col < child_entries.size(); ++col) {
-// 			auto &child_entry = child_entries[col];
-// 			auto &left_child_entry = left_child_entries[col];
-// 			auto &right_child_entry = right_child_entries[col];
-// 			auto pdata = ConstantVector::GetData<int32_t>(*child_entry);
-// 			auto left_pdata = ConstantVector::GetData<int32_t>(*left_child_entry);
-// 			auto right_pdata = ConstantVector::GetData<int32_t>(*right_child_entry);
-// 			pdata[base_idx] = left_pdata[lhs_list_index] - right_pdata[rhs_list_index];
-// 		}
-// 	}
-// 	if (left_vector_type == VectorType::CONSTANT_VECTOR && right_vector_type == VectorType::CONSTANT_VECTOR) {
-// 		result.SetVectorType(VectorType::CONSTANT_VECTOR);
-// 	}
-// 	result.Verify(count);
-// }
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	auto &child_entries = StructVector::GetEntries(result);
+	auto &left_child_entries = StructVector::GetEntries(left_vector);
+	auto &right_child_entries = StructVector::GetEntries(right_vector);
+	for (int base_idx = 0; base_idx < count; base_idx++) {
+		auto lhs_list_index = lhs_data.sel->get_index(base_idx);
+		auto rhs_list_index = rhs_data.sel->get_index(base_idx);
+		if (!lhs_data.validity.RowIsValid(lhs_list_index) || !rhs_data.validity.RowIsValid(rhs_list_index)) {
+			FlatVector::SetNull(result, base_idx, true);
+			continue;
+		}
+		for (size_t col = 0; col < child_entries.size(); ++col) {
+			auto &child_entry = child_entries[col];
+			auto &left_child_entry = left_child_entries[col];
+			auto &right_child_entry = right_child_entries[col];
+			auto pdata = ConstantVector::GetData<int32_t>(*child_entry);
+			auto left_pdata = ConstantVector::GetData<int32_t>(*left_child_entry);
+			auto right_pdata = ConstantVector::GetData<int32_t>(*right_child_entry);
+			pdata[base_idx] = left_pdata[lhs_list_index] - right_pdata[rhs_list_index];
+		}
+	}
+	if (left_vector_type == VectorType::CONSTANT_VECTOR && right_vector_type == VectorType::CONSTANT_VECTOR) {
+		result.SetVectorType(VectorType::CONSTANT_VECTOR);
+	}
+	result.Verify(count);
+}
 
 //===--------------------------------------------------------------------===//
 // Quack Table Function
