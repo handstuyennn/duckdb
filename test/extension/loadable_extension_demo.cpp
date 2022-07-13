@@ -14,7 +14,7 @@ inline string_t hello_fun(string_t what) {
 	return "Hello, " + what.GetString();
 }
 
-DUCKDB_API inline void TestAliasHello(DataChunk &args, ExpressionState &state, Vector &result) {
+inline void TestAliasHello(DataChunk &args, ExpressionState &state, Vector &result) {
 	result.Reference(Value("Hello Alias!"));
 }
 
