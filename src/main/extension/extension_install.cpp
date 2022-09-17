@@ -15,27 +15,8 @@ namespace duckdb {
 //===--------------------------------------------------------------------===//
 // Install Extension
 //===--------------------------------------------------------------------===//
-const string ExtensionHelper::NormalizeVersionTag(const string &version_tag) {
-	if (version_tag.length() > 0 && version_tag[0] != 'v') {
-		return "v" + version_tag;
-	}
-	return version_tag;
-}
-
-bool ExtensionHelper::IsRelease(const string &version_tag) {
-	return !StringUtil::Contains(version_tag, "-dev");
-}
-
-const string ExtensionHelper::GetVersionDirectoryName() {
-	if (IsRelease(DuckDB::LibraryVersion())) {
-		return NormalizeVersionTag(DuckDB::LibraryVersion());
-	} else {
-		return DuckDB::SourceID();
-	}
-}
-
 const vector<string> ExtensionHelper::PathComponents() {
-	return vector<string> {".duckdb", "extensions", GetVersionDirectoryName(), DuckDB::Platform()};
+	return vector<string> {".duckdb", "extensions", DuckDB::SourceID(), DuckDB::Platform()};
 }
 
 string ExtensionHelper::ExtensionDirectory(ClientContext &context) {
@@ -108,7 +89,7 @@ void ExtensionHelper::InstallExtension(ClientContext &context, const string &ext
 		extension_name = "";
 	}
 
-	auto url = StringUtil::Replace(url_template, "${REVISION}", GetVersionDirectoryName());
+	auto url = StringUtil::Replace(url_template, "${REVISION}", DuckDB::SourceID());
 	url = StringUtil::Replace(url, "${PLATFORM}", DuckDB::Platform());
 	url = StringUtil::Replace(url, "${NAME}", extension_name);
 
