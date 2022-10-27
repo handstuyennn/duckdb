@@ -9,7 +9,7 @@
 #include "geo-functions.hpp"
 
 namespace duckdb {
-void GEOExtension::Load(DuckDB &db) {
+void GeoExtension::Load(DuckDB &db) {
 	Connection con(db);
 	con.BeginTransaction();
 
@@ -95,7 +95,7 @@ void GEOExtension::Load(DuckDB &db) {
 	con.Commit();
 }
 
-std::string GEOExtension::Name() {
+std::string GeoExtension::Name() {
 	return "geo";
 }
 
@@ -105,7 +105,7 @@ extern "C" {
 
 DUCKDB_EXTENSION_API void geo_init(duckdb::DatabaseInstance &db) {
 	duckdb::DuckDB db_wrapper(db);
-	db_wrapper.LoadExtension<duckdb::GEOExtension>();
+	db_wrapper.LoadExtension<duckdb::GeoExtension>();
 }
 
 DUCKDB_EXTENSION_API const char *geo_version() {

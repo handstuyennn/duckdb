@@ -12,7 +12,7 @@
 
 namespace duckdb {
 
-class GEOExtension : public Extension {
+class GeoExtension : public Extension {
 public:
 	void Load(DuckDB &db) override;
 	std::string Name() override;

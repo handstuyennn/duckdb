@@ -219,7 +219,7 @@ ExtensionLoadResult ExtensionHelper::LoadExtensionInternal(DuckDB &db, const std
 #endif
 	} else if (extension == "geo") {
 #if GEO_STATICALLY_LOADED
-		db.LoadExtension<GEOExtension>();
+		db.LoadExtension<GeoExtension>();
 #else
 		// excel extension required but not build: skip this test
 		return ExtensionLoadResult::NOT_LOADED;
