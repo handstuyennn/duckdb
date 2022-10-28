@@ -346,9 +346,7 @@ LWGEOM *lwgeom_from_geojson(const char *geojson, char **srs) {
 	}
 
 	int hasz = LW_FALSE;
-	std::cout << "lwgeom geojson =========================== " << std::endl;
 	LWGEOM *lwgeom = parse_geojson(poObj, &hasz);
-	std::cout << "lwgeom in =========================== " << (int)lwgeom->type << std::endl;
 	json_object_put(poObj);
 	if (!lwgeom)
 		return NULL;
