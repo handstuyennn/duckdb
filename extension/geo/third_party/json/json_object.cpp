@@ -1,6 +1,7 @@
 #include "linkhash.hpp"
 #include "printbuf.hpp"
 
+#include <cmath>
 #include <cstring>
 
 namespace json {
