@@ -2,6 +2,7 @@
 #include "liblwgeom/lwinline.hpp"
 
 #include <cstring>
+#include <limits.h>
 #include <math.h>
 
 namespace duckdb {
