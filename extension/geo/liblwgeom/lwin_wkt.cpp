@@ -572,22 +572,19 @@ LWGEOM *wkt_parser_curvepolygon_finalize(LWGEOM *poly, char *dimensionality) {
 	int flagdims = FLAGS_NDIMS(flags);
 
 	/* Null input implies empty return */
-	if( ! poly )
+	if (!poly)
 		return lwcurvepoly_as_lwgeom(lwcurvepoly_construct_empty(SRID_UNKNOWN, FLAGS_GET_Z(flags), FLAGS_GET_M(flags)));
 
-	if ( flagdims > 2 )
-	{
+	if (flagdims > 2) {
 		/* If the number of dimensions are not consistent, we have a problem. */
-		if( flagdims != FLAGS_NDIMS(poly->flags) )
-		{
+		if (flagdims != FLAGS_NDIMS(poly->flags)) {
 			lwgeom_free(poly);
 			SET_PARSER_ERROR(PARSER_ERROR_MIXDIMS);
 			return NULL;
 		}
 
 		/* Harmonize the flags in the sub-components with the wkt flags */
-		if( LW_FAILURE == wkt_parser_set_dims(poly, flags) )
-		{
+		if (LW_FAILURE == wkt_parser_set_dims(poly, flags)) {
 			lwgeom_free(poly);
 			SET_PARSER_ERROR(PARSER_ERROR_OTHER);
 			return NULL;
