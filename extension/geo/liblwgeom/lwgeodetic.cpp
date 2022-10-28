@@ -746,7 +746,7 @@ int sphere_project(const GEOGRAPHIC_POINT *r, double distance, double azimuth, G
 		lon2 = lon1 + atan2(sin(azimuth) * sin(d) * cos(lat1), cos(d) - sin(lat1) * sin(lat2));
 	}
 
-	if (isnan(lat2) || isnan(lon2))
+	if (std::isnan(lat2) || std::isnan(lon2))
 		return LW_FAILURE;
 
 	n->lat = lat2;

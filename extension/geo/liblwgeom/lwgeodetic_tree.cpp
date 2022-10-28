@@ -141,7 +141,7 @@ static int circ_center_spherical(const GEOGRAPHIC_POINT *c1, const GEOGRAPHIC_PO
 	double dir = sphere_direction(c1, c2, distance);
 
 	/* Catch sphere_direction when it barfs */
-	if (isnan(dir))
+	if (std::isnan(dir))
 		return LW_FAILURE;
 
 	/* Center of new circle is projection from start point, using offset distance*/
