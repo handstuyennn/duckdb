@@ -408,7 +408,7 @@ static LWPOINT *lwpoint_from_wkb_state(wkb_parse_state *s) {
 
 	/* Check for POINT(NaN NaN) ==> POINT EMPTY */
 	pt = getPoint2d_cp(pa, 0);
-	if (isnan(pt->x) && isnan(pt->y)) {
+	if (std::isnan(pt->x) && std::isnan(pt->y)) {
 		ptarray_free(pa);
 		return lwpoint_construct_empty(s->srid, s->has_z, s->has_m);
 	} else {
