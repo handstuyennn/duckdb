@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <cstring>
-#include <cmath>
+#include <math.h>
 
 namespace duckdb {
 
