@@ -43,6 +43,8 @@ jobs:
       BUILD_EXCEL: 1
       BUILD_PARQUET: 1
       BUILD_GEO: 1
+      BUILD_SUBSTRAIT_EXTENSION: 1
+      BUILD_JEMALLOC: 1
       GEN: ninja
 
     steps:
@@ -86,6 +88,7 @@ jobs:
       BUILD_JSON: 1
       BUILD_EXCEL: 1
       BUILD_GEO: 1
+      BUILD_JEMALLOC: 1
 
     steps:
     - uses: actions/checkout@v3
@@ -127,6 +130,7 @@ jobs:
       BUILD_JSON: 1
       BUILD_EXCEL: 1
       BUILD_GEO: 1
+      BUILD_JEMALLOC: 1
 
     steps:
     - uses: actions/checkout@v3
@@ -241,6 +245,7 @@ jobs:
       BUILD_JSON: 1
       BUILD_EXCEL: 1
       BUILD_GEO: 1
+      BUILD_JEMALLOC: 1
       TSAN_OPTIONS: suppressions=.sanitizer-thread-suppressions.txt
 
     steps:
@@ -279,6 +284,7 @@ jobs:
       CC: gcc-10
       CXX: g++-10
       DISABLE_SANITIZER: 1
+      BUILD_JEMALLOC: 1
       GEN: ninja
 
     steps:
