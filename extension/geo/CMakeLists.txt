@@ -52,6 +52,7 @@ set(GEO_EXTENSION_FILES
     liblwgeom/lwpoly.cpp
     liblwgeom/lwcurvepoly.cpp
     liblwgeom/lwmpoly.cpp
+    liblwgeom/lwiterator.cpp
     parser/lwin_wkt_lex.cpp
     parser/lwin_wkt_parse.cpp
     libpgcommon/lwgeom_pg.cpp

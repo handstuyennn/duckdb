@@ -107,9 +107,14 @@ GSERIALIZED *Geometry::MakePoint(double x, double y, double z) {
 	return postgis.LWGEOM_makepoint(x, y, z);
 }
 
-std::string Geometry::AsText(data_ptr_t base, size_t size) {
+GSERIALIZED *Geometry::MakeLine(GSERIALIZED *g1, GSERIALIZED *g2) {
 	Postgis postgis;
-	return postgis.LWGEOM_asText(base, size);
+	return postgis.LWGEOM_makeline(g1, g2);
+}
+
+std::string Geometry::AsText(data_ptr_t base, size_t size, int max_digits) {
+	Postgis postgis;
+	return postgis.LWGEOM_asText(base, size, max_digits);
 }
 
 double Geometry::Distance(GSERIALIZED *g1, GSERIALIZED *g2) {

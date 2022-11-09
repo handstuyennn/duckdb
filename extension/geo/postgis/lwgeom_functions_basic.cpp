@@ -32,6 +32,32 @@ GSERIALIZED *LWGEOM_makepoint(double x, double y, double z) {
 	return result;
 }
 
+GSERIALIZED *LWGEOM_makeline(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	LWGEOM *lwgeoms[2];
+	GSERIALIZED *result = NULL;
+	LWLINE *outline;
+
+	if ((gserialized_get_type(geom1) != POINTTYPE && gserialized_get_type(geom1) != LINETYPE) ||
+	    (gserialized_get_type(geom2) != POINTTYPE && gserialized_get_type(geom2) != LINETYPE)) {
+		// elog(ERROR, "Input geometries must be points or lines");
+		return NULL;
+	}
+
+	gserialized_error_if_srid_mismatch(geom1, geom2, __func__);
+
+	lwgeoms[0] = lwgeom_from_gserialized(geom1);
+	lwgeoms[1] = lwgeom_from_gserialized(geom2);
+
+	outline = lwline_from_lwgeom_array(lwgeoms[0]->srid, 2, lwgeoms);
+
+	result = geometry_serialize((LWGEOM *)outline);
+
+	lwgeom_free(lwgeoms[0]);
+	lwgeom_free(lwgeoms[1]);
+
+	return result;
+}
+
 double ST_distance(GSERIALIZED *geom1, GSERIALIZED *geom2) {
 	double mindist;
 	LWGEOM *lwgeom1 = lwgeom_from_gserialized(geom1);

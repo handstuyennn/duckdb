@@ -118,13 +118,14 @@ char *LWGEOM_base(GSERIALIZED *gser) {
 	return (char *)buffer;
 }
 
-std::string LWGEOM_asText(const void *base, size_t size) {
+std::string LWGEOM_asText(const void *base, size_t size, size_t max_digits) {
 	std::string rstr = "";
 	LWGEOM *lwgeom = lwgeom_from_wkb(static_cast<const uint8_t *>(base), size, LW_PARSER_CHECK_NONE);
-	size_t wkt_size;
-	rstr = lwgeom_to_wkt(lwgeom, WKT_EXTENDED, WKT_PRECISION, &wkt_size);
+	// size_t wkt_size;
+	// rstr = lwgeom_to_wkt(lwgeom, WKT_EXTENDED, WKT_PRECISION, &wkt_size);
+	auto text = lwgeom_to_wkt_varlena(lwgeom, WKT_ISO, max_digits);
 	lwgeom_free(lwgeom);
-	return rstr;
+	return std::string(text->data);
 }
 
 std::string LWGEOM_asBinary(const void *base, size_t size) {

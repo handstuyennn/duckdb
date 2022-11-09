@@ -109,6 +109,7 @@ namespace duckdb {
 int lwprint_double(double d, int maxdd, char *buf);
 
 int p3d_same(const POINT3D *p1, const POINT3D *p2);
+int p2d_same(const POINT2D *p1, const POINT2D *p2);
 
 /*
  * What side of the line formed by p1 and p2 does q fall?

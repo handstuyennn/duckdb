@@ -24,7 +24,7 @@ void GeoExtension::Load(DuckDB &db) {
 	catalog.CreateType(*con.context, &info);
 
 	// add geo functions
-	// ST_MAKEPOINT
+	// ST_MAKEPOINT / ST_GEOGPOINT
 	ScalarFunctionSet make_point("st_makepoint");
 	make_point.AddFunction(
 	    ScalarFunction({LogicalType::DOUBLE, LogicalType::DOUBLE}, geo_type, GeoFunctions::MakePointFunction));
@@ -34,9 +34,18 @@ void GeoExtension::Load(DuckDB &db) {
 	CreateScalarFunctionInfo make_point_func_info(make_point);
 	catalog.AddFunction(*con.context, &make_point_func_info);
 
+	// ST_MAKELINE
+	ScalarFunctionSet make_line("st_makeline");
+	make_line.AddFunction(ScalarFunction({geo_type, geo_type}, geo_type, GeoFunctions::MakeLineFunction));
+
+	CreateScalarFunctionInfo make_line_func_info(make_line);
+	catalog.AddFunction(*con.context, &make_line_func_info);
+
 	// ST_ASTEXT
 	ScalarFunctionSet as_text("st_astext");
 	as_text.AddFunction(ScalarFunction({geo_type}, LogicalType::VARCHAR, GeoFunctions::GeometryAsTextFunction));
+	as_text.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR, GeoFunctions::GeometryAsTextFunction));
 
 	CreateScalarFunctionInfo as_text_func_info(as_text);
 	catalog.AddFunction(*con.context, &as_text_func_info);

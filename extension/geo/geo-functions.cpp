@@ -97,6 +97,40 @@ void GeoFunctions::MakePointFunction(DataChunk &args, ExpressionState &state, Ve
 	}
 }
 
+struct MakeLineBinaryOperator {
+	template <class TA, class TB, class TR>
+	static inline TR Operation(TA point1, TB point2) {
+		if (point1.GetSize() == 0 || point2.GetSize() == 0) {
+			return NULL;
+		}
+		auto gser1 = Geometry::GetGserialized(point1);
+		auto gser2 = Geometry::GetGserialized(point2);
+		if (!gser1 || !gser2) {
+			throw ConversionException("Failure in geometry distance: could not calculate distance from geometries");
+		}
+		auto gser = Geometry::MakeLine(gser1, gser2);
+		idx_t rv_size = Geometry::GetGeometrySize(gser);
+		auto base = Geometry::GetBase(gser);
+		Geometry::DestroyGeometry(gser1);
+		Geometry::DestroyGeometry(gser2);
+		Geometry::DestroyGeometry(gser);
+		return string_t((const char *)base, rv_size);
+	}
+};
+
+template <typename TA, typename TB, typename TR>
+static void MakeLineBinaryExecutor(Vector &point1, Vector &point2, Vector &result, idx_t count) {
+	BinaryExecutor::ExecuteStandard<TA, TB, TR, MakeLineBinaryOperator>(point1, point2, result, count);
+}
+
+void GeoFunctions::MakeLineFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &point1_arg = args.data[0];
+	auto &point2_arg = args.data[1];
+	if (args.data.size() == 2) {
+		MakeLineBinaryExecutor<string_t, string_t, string_t>(point1_arg, point2_arg, result, args.size());
+	}
+}
+
 struct AsTextUnaryOperator {
 	template <class TA, class TR>
 	static inline TR Operation(TA text, Vector &result) {
@@ -111,14 +145,37 @@ struct AsTextUnaryOperator {
 	}
 };
 
+static string_t AsTextScalarFunction(Vector &result, string_t text, size_t max_digits) {
+	if (text.GetSize() == 0) {
+		return text;
+	}
+	string str = Geometry::AsText((data_ptr_t)text.GetDataUnsafe(), text.GetSize(), max_digits);
+	auto result_str = StringVector::EmptyString(result, str.size());
+	memcpy(result_str.GetDataWriteable(), str.c_str(), str.size());
+	result_str.Finalize();
+	return result_str;
+}
+
 template <typename TA, typename TR>
 static void GeometryAsTextUnaryExecutor(Vector &text, Vector &result, idx_t count) {
 	UnaryExecutor::ExecuteString<TA, TR, AsTextUnaryOperator>(text, result, count);
 }
 
+template <typename TA, typename TB, typename TR>
+static void GeometryAsTextBinaryExecutor(Vector &text, Vector &max_digits, Vector &result, idx_t count) {
+	BinaryExecutor::Execute<TA, TB, TR>(text, max_digits, result, count, [&](TA value, TB m_digits) {
+		return AsTextScalarFunction(result, value, m_digits);
+	});
+}
+
 void GeoFunctions::GeometryAsTextFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &text_arg = args.data[0];
-	GeometryAsTextUnaryExecutor<string_t, string_t>(text_arg, result, args.size());
+	if (args.data.size() == 2) {
+		auto &max_digit_arg = args.data[1];
+		GeometryAsTextBinaryExecutor<string_t, int, string_t>(text_arg, max_digit_arg, result, args.size());
+	} else {
+		GeometryAsTextUnaryExecutor<string_t, string_t>(text_arg, result, args.size());
+	}
 }
 
 struct GeometryDistanceBinaryOperator {

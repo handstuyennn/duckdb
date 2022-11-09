@@ -9,6 +9,13 @@ int p3d_same(const POINT3D *p1, const POINT3D *p2) {
 		return LW_FALSE;
 }
 
+int p2d_same(const POINT2D *p1, const POINT2D *p2) {
+	if (FP_EQUALS(p1->x, p2->x) && FP_EQUALS(p1->y, p2->y))
+		return LW_TRUE;
+	else
+		return LW_FALSE;
+}
+
 /**
  * lw_segment_side()
  *

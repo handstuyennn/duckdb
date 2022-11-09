@@ -17,6 +17,7 @@ struct GeoFunctions {
 	static bool CastVarcharToGEO(Vector &source, Vector &result, idx_t count, CastParameters &parameters);
 	static bool CastGeoToVarchar(Vector &source, Vector &result, idx_t count, CastParameters &parameters);
 	static void MakePointFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void MakeLineFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryAsTextFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryDistanceFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryCentroidFunction(DataChunk &args, ExpressionState &state, Vector &result);

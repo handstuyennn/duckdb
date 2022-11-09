@@ -1,11 +1,11 @@
 #include "postgis.hpp"
 
+#include "postgis/geography_centroid.hpp"
 #include "postgis/geography_measurement.hpp"
 #include "postgis/lwgeom_functions_basic.hpp"
+#include "postgis/lwgeom_geos.hpp"
 #include "postgis/lwgeom_inout.hpp"
 #include "postgis/lwgeom_ogc.hpp"
-#include "postgis/lwgeom_geos.hpp"
-#include "postgis/geography_centroid.hpp"
 
 namespace duckdb {
 Postgis::Postgis() {
@@ -30,8 +30,8 @@ string Postgis::LWGEOM_asBinary(const void *data, size_t size) {
 	return duckdb::LWGEOM_asBinary(data, size);
 }
 
-string Postgis::LWGEOM_asText(const void *data, size_t size) {
-	return duckdb::LWGEOM_asText(data, size);
+string Postgis::LWGEOM_asText(const void *data, size_t size, size_t max_digits) {
+	return duckdb::LWGEOM_asText(data, size, max_digits);
 }
 
 string Postgis::LWGEOM_asGeoJson(const void *data, size_t size) {
@@ -52,6 +52,10 @@ GSERIALIZED *Postgis::LWGEOM_makepoint(double x, double y) {
 
 GSERIALIZED *Postgis::LWGEOM_makepoint(double x, double y, double z) {
 	return duckdb::LWGEOM_makepoint(x, y, z);
+}
+
+GSERIALIZED *Postgis::LWGEOM_makeline(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	return duckdb::LWGEOM_makeline(geom1, geom2);
 }
 
 double Postgis::ST_distance(GSERIALIZED *geom1, GSERIALIZED *geom2) {

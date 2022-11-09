@@ -10,7 +10,7 @@
 
 #include "duckdb/common/common.hpp"
 #include "duckdb/common/types.hpp"
-#include "liblwgeom/liblwgeom.hpp"
+#include "liblwgeom/liblwgeom_internal.hpp"
 
 namespace duckdb {
 
@@ -46,7 +46,9 @@ public:
 
 	static GSERIALIZED *MakePoint(double x, double y, double z);
 
-	static std::string AsText(data_ptr_t base, size_t size);
+	static GSERIALIZED *MakeLine(GSERIALIZED *g1, GSERIALIZED *g2);
+
+	static std::string AsText(data_ptr_t base, size_t size, int max_digits = OUT_DEFAULT_DECIMAL_DIGITS);
 
 	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2);
 
