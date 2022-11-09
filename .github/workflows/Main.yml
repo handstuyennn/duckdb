@@ -110,7 +110,7 @@ jobs:
 
     - name: Test
       shell: bash
-      run: build/reldebug/test/unittest "*" --force-storage
+      run: build/reldebug/test/unittest --force-storage
 
  force-restart:
     name: Force Restart
@@ -152,7 +152,7 @@ jobs:
 
     - name: Test
       shell: bash
-      run: build/reldebug/test/unittest "*" --force-reload --force-storage
+      run: build/reldebug/test/unittest --force-reload --force-storage
 
  no-string-inline:
     name: No String Inline
