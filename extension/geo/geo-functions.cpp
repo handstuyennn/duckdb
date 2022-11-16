@@ -131,6 +131,215 @@ void GeoFunctions::MakeLineFunction(DataChunk &args, ExpressionState &state, Vec
 	}
 }
 
+void GeoFunctions::MakeLineArrayFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	Vector &input = args.data[0];
+	auto count = args.size();
+	result.SetVectorType(VectorType::CONSTANT_VECTOR);
+	if (input.GetVectorType() != VectorType::CONSTANT_VECTOR) {
+		result.SetVectorType(VectorType::FLAT_VECTOR);
+	}
+
+	auto result_entries = FlatVector::GetData<string_t>(result);
+	auto &result_validity = FlatVector::Validity(result);
+
+	auto list_size = ListVector::GetListSize(input);
+	auto &child_vector = ListVector::GetEntry(input);
+
+	UnifiedVectorFormat child_data;
+	child_vector.ToUnifiedFormat(list_size, child_data);
+
+	UnifiedVectorFormat list_data;
+	input.ToUnifiedFormat(count, list_data);
+	auto list_entries = (list_entry_t *)list_data.data;
+
+	// not required for a comparison of nested types
+	auto child_value = (string_t *)child_data.data;
+
+	for (idx_t i = 0; i < count; i++) {
+		auto list_index = list_data.sel->get_index(i);
+
+		if (!list_data.validity.RowIsValid(list_index)) {
+			result_validity.SetInvalid(i);
+			continue;
+		}
+
+		const auto &list_entry = list_entries[list_index];
+		GSERIALIZED *gserArray[list_entry.length];
+		for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
+			auto child_value_idx = child_data.sel->get_index(list_entry.offset + child_idx);
+			if (!child_data.validity.RowIsValid(child_value_idx)) {
+				continue;
+			}
+
+			auto value = child_value[child_value_idx];
+			if (value.GetSize() == 0) {
+				continue;
+			}
+			auto gser = Geometry::GetGserialized(value);
+			if (!gser) {
+				continue;
+			}
+			gserArray[child_idx] = gser;
+		}
+		auto gserline = Geometry::MakeLineGArray(gserArray, list_entry.length);
+		idx_t rv_size = Geometry::GetGeometrySize(gserline);
+		auto base = Geometry::GetBase(gserline);
+		for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
+			Geometry::DestroyGeometry(gserArray[child_idx]);
+		}
+		Geometry::DestroyGeometry(gserline);
+		result_entries[i] = string_t((const char *)base, rv_size);
+	}
+}
+
+struct MakePolygonUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA geom) {
+		if (geom.GetSize() == 0) {
+			// throw ConversionException(
+			//     "Failure in geometry get X: could not get coordinate X from geometry");
+			return string_t();
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		auto gserpoly = Geometry::MakePolygon(gser);
+		idx_t rv_size = Geometry::GetGeometrySize(gserpoly);
+		auto base = Geometry::GetBase(gserpoly);
+		Geometry::DestroyGeometry(gser);
+		Geometry::DestroyGeometry(gserpoly);
+		return string_t((const char *)base, rv_size);
+	}
+};
+
+template <typename TA, typename TR>
+static void MakePolygonUnaryExecutor(Vector &geom, Vector &result, idx_t count) {
+	UnaryExecutor::Execute<TA, TR, MakePolygonUnaryOperator>(geom, result, count);
+}
+
+void GeoFunctions::MakePolygonFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &geom_arg = args.data[0];
+	if (args.data.size() == 2) {
+		Vector &geom_vector = args.data[0];
+		Vector &input = args.data[1];
+		auto count = args.size();
+		result.SetVectorType(VectorType::CONSTANT_VECTOR);
+		if (input.GetVectorType() != VectorType::CONSTANT_VECTOR) {
+			result.SetVectorType(VectorType::FLAT_VECTOR);
+		}
+
+		auto result_entries = FlatVector::GetData<string_t>(result);
+		auto &result_validity = FlatVector::Validity(result);
+
+		auto list_size = ListVector::GetListSize(input);
+		auto &child_vector = ListVector::GetEntry(input);
+
+		UnifiedVectorFormat child_data;
+		child_vector.ToUnifiedFormat(list_size, child_data);
+
+		UnifiedVectorFormat geom_data;
+		geom_vector.ToUnifiedFormat(count, geom_data);
+
+		UnifiedVectorFormat list_data;
+		input.ToUnifiedFormat(count, list_data);
+		auto list_entries = (list_entry_t *)list_data.data;
+
+		// not required for a comparison of nested types
+		auto values = (string_t *)geom_data.data;
+		auto child_value = (string_t *)child_data.data;
+
+		for (idx_t i = 0; i < count; i++) {
+			auto list_index = list_data.sel->get_index(i);
+			auto value_index = geom_data.sel->get_index(i);
+
+			if (!list_data.validity.RowIsValid(list_index) || !geom_data.validity.RowIsValid(value_index)) {
+				result_validity.SetInvalid(i);
+				continue;
+			}
+
+			const auto &list_entry = list_entries[list_index];
+			GSERIALIZED *gserArray[list_entry.length];
+			for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
+				auto child_value_idx = child_data.sel->get_index(list_entry.offset + child_idx);
+				if (!child_data.validity.RowIsValid(child_value_idx)) {
+					continue;
+				}
+
+				auto value = child_value[child_value_idx];
+				if (value.GetSize() == 0) {
+					continue;
+				}
+				auto gser = Geometry::GetGserialized(value);
+				if (!gser) {
+					continue;
+				}
+				gserArray[child_idx] = gser;
+			}
+			auto geom_value = values[value_index];
+			auto gser = Geometry::GetGserialized(geom_value);
+			auto gserpoly = Geometry::MakePolygon(gser, gserArray, list_entry.length);
+			idx_t rv_size = Geometry::GetGeometrySize(gserpoly);
+			auto base = Geometry::GetBase(gserpoly);
+			for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
+				Geometry::DestroyGeometry(gserArray[child_idx]);
+			}
+			Geometry::DestroyGeometry(gserpoly);
+			Geometry::DestroyGeometry(gser);
+			result_entries[i] = string_t((const char *)base, rv_size);
+		}
+		// MakePolygonBinaryExecutor<string_t, string_t>(point1_arg, result, args.size());
+	} else {
+		MakePolygonUnaryExecutor<string_t, string_t>(geom_arg, result, args.size());
+	}
+}
+
+struct AsBinaryUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA geom, Vector &result) {
+		if (geom.GetSize() == 0) {
+			return geom;
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		auto binary = Geometry::AsBinary(gser);
+		auto result_str = StringVector::EmptyString(result, binary->size);
+		memcpy(result_str.GetDataWriteable(), binary->data, binary->size);
+		result_str.Finalize();
+		return result_str;
+	}
+};
+
+static string_t AsBinaryScalarFunction(Vector &result, string_t geom, string_t text) {
+	if (geom.GetSize() == 0 || text.GetSize() == 0) {
+		return geom;
+	}
+	auto gser = Geometry::GetGserialized(geom);
+	auto binary = Geometry::AsBinary(gser, text.GetString());
+	auto result_str = StringVector::EmptyString(result, binary->size);
+	memcpy(result_str.GetDataWriteable(), binary->data, binary->size);
+	result_str.Finalize();
+	return result_str;
+}
+
+template <typename TA, typename TR>
+static void GeometryAsBinaryUnaryExecutor(Vector &geom, Vector &result, idx_t count) {
+	UnaryExecutor::ExecuteString<TA, TR, AsBinaryUnaryOperator>(geom, result, count);
+}
+
+template <typename TA, typename TB, typename TR>
+static void GeometryAsBinaryBinaryExecutor(Vector &geom, Vector &text, Vector &result, idx_t count) {
+	BinaryExecutor::Execute<TA, TB, TR>(geom, text, result, count, [&](TA value, TB text_val) {
+		return AsBinaryScalarFunction(result, value, text_val);
+	});
+}
+
+void GeoFunctions::GeometryAsBinaryFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &geom_arg = args.data[0];
+	if (args.data.size() == 2) {
+		auto &text_arg = args.data[1];
+		GeometryAsBinaryBinaryExecutor<string_t, string_t, string_t>(geom_arg, text_arg, result, args.size());
+	} else {
+		GeometryAsBinaryUnaryExecutor<string_t, string_t>(geom_arg, result, args.size());
+	}
+}
+
 struct AsTextUnaryOperator {
 	template <class TA, class TR>
 	static inline TR Operation(TA text, Vector &result) {
@@ -175,6 +384,112 @@ void GeoFunctions::GeometryAsTextFunction(DataChunk &args, ExpressionState &stat
 		GeometryAsTextBinaryExecutor<string_t, int, string_t>(text_arg, max_digit_arg, result, args.size());
 	} else {
 		GeometryAsTextUnaryExecutor<string_t, string_t>(text_arg, result, args.size());
+	}
+}
+
+struct AsGeojsonUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA geom, Vector &result) {
+		if (geom.GetSize() == 0) {
+			return geom;
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		auto geojson = Geometry::AsGeoJson(gser);
+		std::string geoText = std::string(geojson->data);
+		auto result_str = StringVector::EmptyString(result, geoText.size());
+		memcpy(result_str.GetDataWriteable(), geoText.c_str(), geoText.size());
+		result_str.Finalize();
+		return result_str;
+	}
+};
+
+struct AsGeojsonBinaryOperator {
+	template <class TA, class TB, class TR>
+	static inline TR Operation(TA geom, TB m_dec_digits) {
+		if (geom.GetSize() == 0) {
+			return string_t();
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		if (!gser) {
+			throw ConversionException("Failure in geometry asgeojson");
+		}
+		auto geojson = Geometry::AsGeoJson(gser, m_dec_digits);
+		std::string geoText = std::string(geojson->data);
+		Geometry::DestroyGeometry(gser);
+		return string_t(geoText.c_str(), geoText.size());
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryAsGeojsonUnaryExecutor(Vector &text, Vector &result, idx_t count) {
+	UnaryExecutor::ExecuteString<TA, TR, AsGeojsonUnaryOperator>(text, result, count);
+}
+
+template <typename TA, typename TB, typename TR>
+static void GeometryAsGeojsonBinaryExecutor(Vector &geom, Vector &m_dec_digits, Vector &result, idx_t count) {
+	BinaryExecutor::ExecuteStandard<TA, TB, TR, AsGeojsonBinaryOperator>(geom, m_dec_digits, result, count);
+}
+
+void GeoFunctions::GeometryAsGeojsonFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &geom_arg = args.data[0];
+	if (args.data.size() == 1) {
+		GeometryAsGeojsonUnaryExecutor<string_t, string_t>(geom_arg, result, args.size());
+	} else if (args.data.size() == 2) {
+		auto &max_dec_digits_arg = args.data[1];
+		GeometryAsGeojsonBinaryExecutor<string_t, int, string_t>(geom_arg, max_dec_digits_arg, result, args.size());
+	}
+}
+
+struct GeoHashUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA geom, Vector &result) {
+		if (geom.GetSize() == 0) {
+			return geom;
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		auto geojson = Geometry::GeoHash(gser);
+		std::string geoText = std::string(geojson->data);
+		auto result_str = StringVector::EmptyString(result, geoText.size());
+		memcpy(result_str.GetDataWriteable(), geoText.c_str(), geoText.size());
+		result_str.Finalize();
+		return result_str;
+	}
+};
+
+struct GeoHashBinaryOperator {
+	template <class TA, class TB, class TR>
+	static inline TR Operation(TA geom, TB m_chars) {
+		if (geom.GetSize() == 0) {
+			return string_t();
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		if (!gser) {
+			throw ConversionException("Failure in geometry geohash");
+		}
+		auto geojson = Geometry::GeoHash(gser, m_chars);
+		std::string geoText = std::string(geojson->data);
+		Geometry::DestroyGeometry(gser);
+		return string_t(geoText.c_str(), geoText.size());
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryGeoHashUnaryExecutor(Vector &text, Vector &result, idx_t count) {
+	UnaryExecutor::ExecuteString<TA, TR, GeoHashUnaryOperator>(text, result, count);
+}
+
+template <typename TA, typename TB, typename TR>
+static void GeometryGeoHashBinaryExecutor(Vector &geom, Vector &m_chars, Vector &result, idx_t count) {
+	BinaryExecutor::ExecuteStandard<TA, TB, TR, GeoHashBinaryOperator>(geom, m_chars, result, count);
+}
+
+void GeoFunctions::GeometryGeoHashFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &geom_arg = args.data[0];
+	if (args.data.size() == 1) {
+		GeometryGeoHashUnaryExecutor<string_t, string_t>(geom_arg, result, args.size());
+	} else if (args.data.size() == 2) {
+		auto &maxchars_arg = args.data[1];
+		GeometryGeoHashBinaryExecutor<string_t, int, string_t>(geom_arg, maxchars_arg, result, args.size());
 	}
 }
 

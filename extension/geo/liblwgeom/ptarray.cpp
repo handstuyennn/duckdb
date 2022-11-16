@@ -142,7 +142,8 @@ int ptarray_append_ptarray(POINTARRAY *pa1, POINTARRAY *pa2, double gap_toleranc
 	ncap = pa1->npoints + npoints;
 	if (pa1->maxpoints < ncap) {
 		pa1->maxpoints = ncap > pa1->maxpoints * 2 ? ncap : pa1->maxpoints * 2;
-		pa1->serialized_pointlist = static_cast<uint8_t *>(lwrealloc(pa1->serialized_pointlist, ptsize * pa1->maxpoints));
+		pa1->serialized_pointlist =
+		    static_cast<uint8_t *>(lwrealloc(pa1->serialized_pointlist, ptsize * pa1->maxpoints));
 	}
 
 	memcpy(getPoint_internal(pa1, pa1->npoints), getPoint_internal(pa2, poff), ptsize * npoints);
@@ -150,6 +151,30 @@ int ptarray_append_ptarray(POINTARRAY *pa1, POINTARRAY *pa2, double gap_toleranc
 	pa1->npoints = ncap;
 
 	return LW_SUCCESS;
+}
+
+/**
+ * @brief Deep clone a pointarray (also clones serialized pointlist)
+ */
+POINTARRAY *ptarray_clone_deep(const POINTARRAY *in) {
+	POINTARRAY *out = (POINTARRAY *)lwalloc(sizeof(POINTARRAY));
+
+	out->flags = in->flags;
+	out->npoints = in->npoints;
+	out->maxpoints = in->npoints;
+
+	FLAGS_SET_READONLY(out->flags, 0);
+
+	if (!in->npoints) {
+		// Avoid calling lwalloc of 0 bytes
+		out->serialized_pointlist = NULL;
+	} else {
+		size_t size = in->npoints * ptarray_point_size(in);
+		out->serialized_pointlist = (uint8_t *)lwalloc(size);
+		memcpy(out->serialized_pointlist, in->serialized_pointlist, size);
+	}
+
+	return out;
 }
 
 int ptarray_is_closed_2d(const POINTARRAY *in) {

@@ -9,6 +9,25 @@
 #include "geo-functions.hpp"
 
 namespace duckdb {
+
+static unique_ptr<FunctionData> MakeLineArrayBind(ClientContext &context, ScalarFunction &bound_function,
+                                                  vector<unique_ptr<Expression>> &arguments) {
+	if (arguments[0]->HasParameter()) {
+		throw ParameterNotResolvedException();
+	}
+	bound_function.arguments[0] = arguments[0]->return_type;
+	return nullptr;
+}
+
+static unique_ptr<FunctionData> MakePolygonArrayBind(ClientContext &context, ScalarFunction &bound_function,
+                                                     vector<unique_ptr<Expression>> &arguments) {
+	if (arguments[0]->HasParameter()) {
+		throw ParameterNotResolvedException();
+	}
+	bound_function.arguments[1] = arguments[1]->return_type;
+	return nullptr;
+}
+
 void GeoExtension::Load(DuckDB &db) {
 	Connection con(db);
 	con.BeginTransaction();
@@ -37,9 +56,29 @@ void GeoExtension::Load(DuckDB &db) {
 	// ST_MAKELINE
 	ScalarFunctionSet make_line("st_makeline");
 	make_line.AddFunction(ScalarFunction({geo_type, geo_type}, geo_type, GeoFunctions::MakeLineFunction));
+	make_line.AddFunction(ScalarFunction({LogicalType::LIST(geo_type)}, geo_type, GeoFunctions::MakeLineArrayFunction,
+	                                     MakeLineArrayBind));
 
 	CreateScalarFunctionInfo make_line_func_info(make_line);
 	catalog.AddFunction(*con.context, &make_line_func_info);
+
+	// ST_MAKEPOLYGON
+	ScalarFunctionSet make_polygon("st_makepolygon");
+	make_polygon.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::MakePolygonFunction));
+	make_polygon.AddFunction(ScalarFunction({geo_type, LogicalType::LIST(geo_type)}, geo_type,
+	                                        GeoFunctions::MakePolygonFunction, MakePolygonArrayBind));
+
+	CreateScalarFunctionInfo make_polygon_func_info(make_polygon);
+	catalog.AddFunction(*con.context, &make_polygon_func_info);
+
+	// ST_ASBINARY
+	ScalarFunctionSet as_binary("st_asbinary");
+	as_binary.AddFunction(ScalarFunction({geo_type}, LogicalType::BLOB, GeoFunctions::GeometryAsBinaryFunction));
+	as_binary.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::VARCHAR}, LogicalType::BLOB, GeoFunctions::GeometryAsBinaryFunction));
+
+	CreateScalarFunctionInfo as_binary_func_info(as_binary);
+	catalog.AddFunction(*con.context, &as_binary_func_info);
 
 	// ST_ASTEXT
 	ScalarFunctionSet as_text("st_astext");
@@ -47,8 +86,23 @@ void GeoExtension::Load(DuckDB &db) {
 	as_text.AddFunction(
 	    ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR, GeoFunctions::GeometryAsTextFunction));
 
-	CreateScalarFunctionInfo as_text_func_info(as_text);
-	catalog.AddFunction(*con.context, &as_text_func_info);
+	// ST_ASGEOJSON
+	ScalarFunctionSet as_geojson("st_asgeojson");
+	as_geojson.AddFunction(ScalarFunction({geo_type}, LogicalType::VARCHAR, GeoFunctions::GeometryAsGeojsonFunction));
+	as_geojson.AddFunction(ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR,
+	                                      GeoFunctions::GeometryAsGeojsonFunction));
+
+	CreateScalarFunctionInfo as_geojson_func_info(as_geojson);
+	catalog.AddFunction(*con.context, &as_geojson_func_info);
+
+	// ST_GEOHASH
+	ScalarFunctionSet geohash("st_geohash");
+	geohash.AddFunction(ScalarFunction({geo_type}, LogicalType::VARCHAR, GeoFunctions::GeometryGeoHashFunction));
+	geohash.AddFunction(ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR,
+	                                      GeoFunctions::GeometryGeoHashFunction));
+
+	CreateScalarFunctionInfo geohash_func_info(geohash);
+	catalog.AddFunction(*con.context, &geohash_func_info);
 
 	// ST_DISTANCE
 	ScalarFunctionSet distance("st_distance");

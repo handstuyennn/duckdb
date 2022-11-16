@@ -20,6 +20,7 @@ set(GEO_EXTENSION_FILES
     postgis/lwgeom_ogc.cpp
     postgis/lwgeom_geos.cpp
     postgis/geography_centroid.cpp
+    postgis/lwgeom_export.cpp
     liblwgeom/lwin_wkt.cpp
     liblwgeom/lwin_wkb.cpp
     liblwgeom/lwutil.cpp

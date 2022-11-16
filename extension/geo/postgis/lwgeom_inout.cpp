@@ -128,6 +128,31 @@ std::string LWGEOM_asText(const void *base, size_t size, size_t max_digits) {
 	return std::string(text->data);
 }
 
+lwvarlena_t *LWGEOM_asBinary(GSERIALIZED *geom, string text) {
+	LWGEOM *lwgeom;
+	uint8_t variant = WKB_ISO;
+
+	/* Get a 2D version of the geometry */
+	lwgeom = lwgeom_from_gserialized(geom);
+
+	/* If user specified endianness, respect it */
+	if (text != "") {
+		if (!strncmp(text.c_str(), "xdr", 3) || !strncmp(text.c_str(), "XDR", 3)) {
+			variant = variant | WKB_XDR;
+		} else {
+			variant = variant | WKB_NDR;
+		}
+	}
+
+	/* Write to WKB and free the geometry */
+	auto binary = lwgeom_to_wkb_varlena(lwgeom, variant);
+	lwgeom_free(lwgeom);
+	if (!binary) {
+		return nullptr;
+	}
+	return binary;
+}
+
 std::string LWGEOM_asBinary(const void *base, size_t size) {
 	std::string rstr = "";
 	LWGEOM *lwgeom = lwgeom_from_wkb(static_cast<const uint8_t *>(base), size, LW_PARSER_CHECK_NONE);

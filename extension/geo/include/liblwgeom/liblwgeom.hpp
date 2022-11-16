@@ -694,6 +694,11 @@ extern int lwgeom_needs_bbox(const LWGEOM *geom);
 extern uint32_t lwgeom_count_vertices(const LWGEOM *geom);
 
 /**
+ * Calculate the GeoHash (http://geohash.org) string for a geometry. Caller must free.
+ */
+lwvarlena_t *lwgeom_geohash(const LWGEOM *lwgeom, int precision);
+
+/**
  * Compute a bbox if not already computed
  *
  * After calling this function lwgeom->bbox is only
@@ -714,6 +719,8 @@ extern int lwgeom_has_srid(const LWGEOM *geom);
  * NOTE: this will modify the point4d pointed to by 'point'.
  */
 extern int getPoint4d_p(const POINTARRAY *pa, uint32_t n, POINT4D *point);
+
+extern POINTARRAY *ptarray_clone_deep(const POINTARRAY *ptarray);
 
 /*
  * Geometry constructors. These constructors to not copy the point arrays
@@ -743,6 +750,7 @@ extern LWCOLLECTION *lwcollection_construct_empty(uint8_t type, int32_t srid, ch
 extern LWPOINT *lwpoint_make2d(int32_t srid, double x, double y);
 extern LWPOINT *lwpoint_make3dz(int32_t srid, double x, double y, double z);
 extern LWLINE *lwline_from_lwgeom_array(int32_t srid, uint32_t ngeoms, LWGEOM **geoms);
+extern LWPOLY *lwpoly_from_lwlines(const LWLINE *shell, uint32_t nholes, const LWLINE **holes);
 
 unsigned int geohash_point_as_int(POINT2D *pt);
 
@@ -933,6 +941,8 @@ extern char *lwgeom_to_wkt(const LWGEOM *geom, uint8_t variant, int precision, s
  * @param precision Double precision
  */
 extern lwvarlena_t *lwgeom_to_wkt_varlena(const LWGEOM *geom, uint8_t variant, int precision);
+
+extern lwvarlena_t *lwgeom_to_wkb_varlena(const LWGEOM *geom, uint8_t variant);
 
 extern uint8_t *bytes_from_hexbytes(const char *hexbuf, size_t hexsize);
 

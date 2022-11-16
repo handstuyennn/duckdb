@@ -130,6 +130,12 @@ LWCOLLECTION *lwcollection_force_dims(const LWCOLLECTION *lwcol, int hasz, int h
 POINTARRAY *ptarray_force_dims(const POINTARRAY *pa, int hasz, int hasm, double zval, double mval);
 
 /*
+ * Geohash
+ */
+int lwgeom_geohash_precision(GBOX bbox, GBOX *bounds);
+lwvarlena_t *geohash_point(double longitude, double latitude, int precision);
+
+/*
  * Startpoint
  */
 int lwpoly_startpoint(const LWPOLY *lwpoly, POINT4D *pt);
