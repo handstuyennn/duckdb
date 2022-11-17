@@ -164,7 +164,7 @@ void GeoFunctions::MakeLineArrayFunction(DataChunk &args, ExpressionState &state
 		}
 
 		const auto &list_entry = list_entries[list_index];
-		GSERIALIZED *gserArray[list_entry.length];
+		std::vector<GSERIALIZED *>gserArray(list_entry.length);
 		for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
 			auto child_value_idx = child_data.sel->get_index(list_entry.offset + child_idx);
 			if (!child_data.validity.RowIsValid(child_value_idx)) {
@@ -181,7 +181,7 @@ void GeoFunctions::MakeLineArrayFunction(DataChunk &args, ExpressionState &state
 			}
 			gserArray[child_idx] = gser;
 		}
-		auto gserline = Geometry::MakeLineGArray(gserArray, list_entry.length);
+		auto gserline = Geometry::MakeLineGArray(&gserArray[0], list_entry.length);
 		idx_t rv_size = Geometry::GetGeometrySize(gserline);
 		auto base = Geometry::GetBase(gserline);
 		for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
@@ -256,7 +256,7 @@ void GeoFunctions::MakePolygonFunction(DataChunk &args, ExpressionState &state, 
 			}
 
 			const auto &list_entry = list_entries[list_index];
-			GSERIALIZED *gserArray[list_entry.length];
+			std::vector<GSERIALIZED *>gserArray(list_entry.length);
 			for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
 				auto child_value_idx = child_data.sel->get_index(list_entry.offset + child_idx);
 				if (!child_data.validity.RowIsValid(child_value_idx)) {
@@ -275,7 +275,7 @@ void GeoFunctions::MakePolygonFunction(DataChunk &args, ExpressionState &state, 
 			}
 			auto geom_value = values[value_index];
 			auto gser = Geometry::GetGserialized(geom_value);
-			auto gserpoly = Geometry::MakePolygon(gser, gserArray, list_entry.length);
+			auto gserpoly = Geometry::MakePolygon(gser, &gserArray[0], list_entry.length);
 			idx_t rv_size = Geometry::GetGeometrySize(gserpoly);
 			auto base = Geometry::GetBase(gserpoly);
 			for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
