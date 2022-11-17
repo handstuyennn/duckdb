@@ -73,7 +73,7 @@ GSERIALIZED *LWGEOM_makeline_garray(GSERIALIZED *gserArray[], int nelems) {
 	geoms = (LWGEOM **)malloc(sizeof(LWGEOM *) * nelems);
 	ngeoms = 0;
 
-	for (size_t i = 0; i < nelems; i++) {
+	for (size_t i = 0; i < (size_t)nelems; i++) {
 		GSERIALIZED *geom = gserArray[i];
 
 		if (!geom)
@@ -115,7 +115,6 @@ GSERIALIZED *LWGEOM_makepoly(GSERIALIZED *pglwg1, GSERIALIZED *gserArray[], int 
 	const LWLINE **holes = NULL;
 	LWPOLY *outpoly;
 	uint32 i;
-	size_t offset = 0;
 
 	/* Get input shell */
 	if (gserialized_get_type(pglwg1) != LINETYPE) {
@@ -127,7 +126,7 @@ GSERIALIZED *LWGEOM_makepoly(GSERIALIZED *pglwg1, GSERIALIZED *gserArray[], int 
 	/* Get input holes if any */
 	if (nholes > 0) {
 		holes = (const LWLINE **)lwalloc(sizeof(LWLINE *) * nholes);
-		for (i = 0; i < nholes; i++) {
+		for (i = 0; i < (size_t)nholes; i++) {
 			LWLINE *hole;
 			auto g = gserArray[i];
 			if (gserialized_get_type(g) != LINETYPE) {
@@ -144,7 +143,7 @@ GSERIALIZED *LWGEOM_makepoly(GSERIALIZED *pglwg1, GSERIALIZED *gserArray[], int 
 
 	lwline_free((LWLINE *)shell);
 
-	for (i = 0; i < nholes; i++) {
+	for (i = 0; i < (size_t)nholes; i++) {
 		lwline_free((LWLINE *)holes[i]);
 	}
 
