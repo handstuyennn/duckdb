@@ -86,6 +86,9 @@ void GeoExtension::Load(DuckDB &db) {
 	as_text.AddFunction(
 	    ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR, GeoFunctions::GeometryAsTextFunction));
 
+	CreateScalarFunctionInfo as_text_func_info(as_text);
+	catalog.AddFunction(*con.context, &as_text_func_info);
+
 	// ST_ASGEOJSON
 	ScalarFunctionSet as_geojson("st_asgeojson");
 	as_geojson.AddFunction(ScalarFunction({geo_type}, LogicalType::VARCHAR, GeoFunctions::GeometryAsGeojsonFunction));
