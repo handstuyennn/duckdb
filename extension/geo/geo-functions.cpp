@@ -164,7 +164,7 @@ void GeoFunctions::MakeLineArrayFunction(DataChunk &args, ExpressionState &state
 		}
 
 		const auto &list_entry = list_entries[list_index];
-		std::vector<GSERIALIZED *>gserArray(list_entry.length);
+		std::vector<GSERIALIZED *> gserArray(list_entry.length);
 		for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
 			auto child_value_idx = child_data.sel->get_index(list_entry.offset + child_idx);
 			if (!child_data.validity.RowIsValid(child_value_idx)) {
@@ -256,7 +256,7 @@ void GeoFunctions::MakePolygonFunction(DataChunk &args, ExpressionState &state, 
 			}
 
 			const auto &list_entry = list_entries[list_index];
-			std::vector<GSERIALIZED *>gserArray(list_entry.length);
+			std::vector<GSERIALIZED *> gserArray(list_entry.length);
 			for (idx_t child_idx = 0; child_idx < list_entry.length; child_idx++) {
 				auto child_value_idx = child_data.sel->get_index(list_entry.offset + child_idx);
 				if (!child_data.validity.RowIsValid(child_value_idx)) {
