@@ -98,8 +98,8 @@ void GeoExtension::Load(DuckDB &db) {
 	// ST_GEOHASH
 	ScalarFunctionSet geohash("st_geohash");
 	geohash.AddFunction(ScalarFunction({geo_type}, LogicalType::VARCHAR, GeoFunctions::GeometryGeoHashFunction));
-	geohash.AddFunction(ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR,
-	                                      GeoFunctions::GeometryGeoHashFunction));
+	geohash.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::INTEGER}, LogicalType::VARCHAR, GeoFunctions::GeometryGeoHashFunction));
 
 	CreateScalarFunctionInfo geohash_func_info(geohash);
 	catalog.AddFunction(*con.context, &geohash_func_info);

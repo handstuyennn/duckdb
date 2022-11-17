@@ -18,8 +18,8 @@ lwvarlena_t *LWGEOM_asGeoJson(GSERIALIZED *geom, size_t m_dec_digits) {
 
 	lwgeom = lwgeom_from_gserialized(geom);
 	auto geojson = lwgeom_to_geojson(lwgeom, srs, precision, output_bbox);
-    lwgeom_free(lwgeom);
-    return geojson;
+	lwgeom_free(lwgeom);
+	return geojson;
 }
 
 } // namespace duckdb
