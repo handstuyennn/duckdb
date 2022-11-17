@@ -751,6 +751,7 @@ extern LWPOINT *lwpoint_make2d(int32_t srid, double x, double y);
 extern LWPOINT *lwpoint_make3dz(int32_t srid, double x, double y, double z);
 extern LWLINE *lwline_from_lwgeom_array(int32_t srid, uint32_t ngeoms, LWGEOM **geoms);
 extern LWPOLY *lwpoly_from_lwlines(const LWLINE *shell, uint32_t nholes, const LWLINE **holes);
+extern LWPOLY *lwpoly_construct_rectangle(char hasz, char hasm, POINT4D *p1, POINT4D *p2, POINT4D *p3, POINT4D *p4);
 
 unsigned int geohash_point_as_int(POINT2D *pt);
 

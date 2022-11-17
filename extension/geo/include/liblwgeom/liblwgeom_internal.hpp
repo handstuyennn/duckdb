@@ -134,6 +134,7 @@ POINTARRAY *ptarray_force_dims(const POINTARRAY *pa, int hasz, int hasm, double 
  */
 int lwgeom_geohash_precision(GBOX bbox, GBOX *bounds);
 lwvarlena_t *geohash_point(double longitude, double latitude, int precision);
+void decode_geohash_bbox(char *geohash, double *lat, double *lon, int precision);
 
 /*
  * Startpoint

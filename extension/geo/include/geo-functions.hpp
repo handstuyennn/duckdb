@@ -24,10 +24,13 @@ struct GeoFunctions {
 	static void GeometryAsTextFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryAsGeojsonFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryGeoHashFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryGeogFromFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryGeomFromGeoJsonFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryDistanceFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryCentroidFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryFromTextFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryFromWKBFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryFromGeoHashFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryGetXFunction(DataChunk &args, ExpressionState &state, Vector &result);
 };
 

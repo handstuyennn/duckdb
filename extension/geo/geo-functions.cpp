@@ -302,6 +302,7 @@ struct AsBinaryUnaryOperator {
 		auto result_str = StringVector::EmptyString(result, binary->size);
 		memcpy(result_str.GetDataWriteable(), binary->data, binary->size);
 		result_str.Finalize();
+		Geometry::DestroyGeometry(gser);
 		return result_str;
 	}
 };
@@ -315,6 +316,7 @@ static string_t AsBinaryScalarFunction(Vector &result, string_t geom, string_t t
 	auto result_str = StringVector::EmptyString(result, binary->size);
 	memcpy(result_str.GetDataWriteable(), binary->data, binary->size);
 	result_str.Finalize();
+	Geometry::DestroyGeometry(gser);
 	return result_str;
 }
 
@@ -452,6 +454,7 @@ struct GeoHashUnaryOperator {
 		auto result_str = StringVector::EmptyString(result, geoText.size());
 		memcpy(result_str.GetDataWriteable(), geoText.c_str(), geoText.size());
 		result_str.Finalize();
+		Geometry::DestroyGeometry(gser);
 		return result_str;
 	}
 };
@@ -491,6 +494,63 @@ void GeoFunctions::GeometryGeoHashFunction(DataChunk &args, ExpressionState &sta
 		auto &maxchars_arg = args.data[1];
 		GeometryGeoHashBinaryExecutor<string_t, int, string_t>(geom_arg, maxchars_arg, result, args.size());
 	}
+}
+
+struct GeogFromUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA text, Vector &result) {
+		if (text.GetSize() == 0) {
+			return string_t();
+		}
+		auto gser = Geometry::ToGserialized(text);
+		idx_t size = Geometry::GetGeometrySize(gser);
+		auto base = Geometry::GetBase(gser);
+		auto result_str = StringVector::EmptyString(result, size);
+		memcpy(result_str.GetDataWriteable(), base, size);
+		result_str.Finalize();
+		Geometry::DestroyGeometry(gser);
+		return result_str;
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryGeogFromUnaryExecutor(Vector &text, Vector &result, idx_t count) {
+	UnaryExecutor::ExecuteString<TA, TR, GeogFromUnaryOperator>(text, result, count);
+}
+
+void GeoFunctions::GeometryGeogFromFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &text_arg = args.data[0];
+	GeometryGeogFromUnaryExecutor<string_t, string_t>(text_arg, result, args.size());
+}
+
+struct GeomFromGeoJsonUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA text, Vector &result) {
+		if (text.GetSize() == 0) {
+			return string_t();
+		}
+		auto gser = Geometry::GeomFromGeoJson(text);
+		if (!gser) {
+			throw ConversionException("Failure in geometry from Json: could not convert JSON to geometry");
+		}
+		idx_t size = Geometry::GetGeometrySize(gser);
+		auto base = Geometry::GetBase(gser);
+		auto result_str = StringVector::EmptyString(result, size);
+		memcpy(result_str.GetDataWriteable(), base, size);
+		result_str.Finalize();
+		Geometry::DestroyGeometry(gser);
+		return result_str;
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryGeomFromGeoJsonUnaryExecutor(Vector &text, Vector &result, idx_t count) {
+	UnaryExecutor::ExecuteString<TA, TR, GeomFromGeoJsonUnaryOperator>(text, result, count);
+}
+
+void GeoFunctions::GeometryGeomFromGeoJsonFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &text_arg = args.data[0];
+	GeometryGeomFromGeoJsonUnaryExecutor<string_t, string_t>(text_arg, result, args.size());
 }
 
 struct GeometryDistanceBinaryOperator {
@@ -718,6 +778,60 @@ void GeoFunctions::GeometryFromWKBFunction(DataChunk &args, ExpressionState &sta
 	} else if (args.data.size() == 2) {
 		auto &srid_arg = args.data[1];
 		GeometryFromWKBBinaryExecutor<string_t, int32_t, string_t>(text_arg, srid_arg, result, args.size());
+	}
+}
+
+struct FromGeoHashUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA text) {
+		if (text.GetSize() == 0) {
+			return text;
+		}
+		auto gser = Geometry::FromGeoHash(text);
+		if (!gser) {
+			throw ConversionException("Failure in geometry from geo hash: could not convert geo hash to geometry");
+		}
+		idx_t size = Geometry::GetGeometrySize(gser);
+		auto base = Geometry::GetBase(gser);
+		Geometry::DestroyGeometry(gser);
+		return string_t((const char *)base, size);
+	}
+};
+
+struct FromGeoHashBinaryOperator {
+	template <class TA, class TB, class TR>
+	static inline TR Operation(TA text, TB precision) {
+		if (text.GetSize() == 0) {
+			return text;
+		}
+		auto gser = Geometry::FromGeoHash(text, precision);
+		if (!gser) {
+			throw ConversionException("Failure in geometry from geo hash: could not convert geo hash to geometry");
+		}
+		idx_t size = Geometry::GetGeometrySize(gser);
+		auto base = Geometry::GetBase(gser);
+		Geometry::DestroyGeometry(gser);
+		return string_t((const char *)base, size);
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryFromGeoHashUnaryExecutor(Vector &text, Vector &result, idx_t count) {
+	UnaryExecutor::Execute<TA, TR, FromGeoHashUnaryOperator>(text, result, count);
+}
+
+template <typename TA, typename TB, typename TR>
+static void GeometryFromGeoHashBinaryExecutor(Vector &text, Vector &precision, Vector &result, idx_t count) {
+	BinaryExecutor::ExecuteStandard<TA, TB, TR, FromGeoHashBinaryOperator>(text, precision, result, count);
+}
+
+void GeoFunctions::GeometryFromGeoHashFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &text_arg = args.data[0];
+	if (args.data.size() == 1) {
+		GeometryFromGeoHashUnaryExecutor<string_t, string_t>(text_arg, result, args.size());
+	} else if (args.data.size() == 2) {
+		auto &precision_arg = args.data[1];
+		GeometryFromGeoHashBinaryExecutor<string_t, int32_t, string_t>(text_arg, precision_arg, result, args.size());
 	}
 }
 

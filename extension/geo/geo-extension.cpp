@@ -107,6 +107,20 @@ void GeoExtension::Load(DuckDB &db) {
 	CreateScalarFunctionInfo geohash_func_info(geohash);
 	catalog.AddFunction(*con.context, &geohash_func_info);
 
+	// ST_GEOGFROM
+	ScalarFunctionSet geog_from("st_geogfrom");
+	geog_from.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryGeogFromFunction));
+
+	CreateScalarFunctionInfo geog_from_func_info(geog_from);
+	catalog.AddFunction(*con.context, &geog_from_func_info);
+
+	// ST_GEOMFROMGEOJSON
+	ScalarFunctionSet geomfromjson_from("st_geomfromgeojson");
+	geomfromjson_from.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryGeomFromGeoJsonFunction));
+
+	CreateScalarFunctionInfo geomfromjson_from_func_info(geomfromjson_from);
+	catalog.AddFunction(*con.context, &geomfromjson_from_func_info);
+
 	// ST_DISTANCE
 	ScalarFunctionSet distance("st_distance");
 	distance.AddFunction(
@@ -126,7 +140,7 @@ void GeoExtension::Load(DuckDB &db) {
 	CreateScalarFunctionInfo centroid_func_info(centroid);
 	catalog.AddFunction(*con.context, &centroid_func_info);
 
-	// ST_GEOFROMTEXT
+	// ST_GEOMFROMTEXT
 	ScalarFunctionSet from_text("st_geomfromtext");
 	from_text.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryFromTextFunction));
 	from_text.AddFunction(
@@ -135,7 +149,7 @@ void GeoExtension::Load(DuckDB &db) {
 	CreateScalarFunctionInfo from_text_func_info(from_text);
 	catalog.AddFunction(*con.context, &from_text_func_info);
 
-	// ST_GEOFROMWKB
+	// ST_GEOMFROMWKB
 	ScalarFunctionSet from_wkb("st_geomfromwkb");
 	from_wkb.AddFunction(ScalarFunction({LogicalType::BLOB}, geo_type, GeoFunctions::GeometryFromWKBFunction));
 	from_wkb.AddFunction(
@@ -143,6 +157,15 @@ void GeoExtension::Load(DuckDB &db) {
 
 	CreateScalarFunctionInfo from_wkb_func_info(from_wkb);
 	catalog.AddFunction(*con.context, &from_wkb_func_info);
+
+	// ST_GEOMFROMGEOHASH
+	ScalarFunctionSet from_geohash("st_geomfromgeohash");
+	from_geohash.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryFromGeoHashFunction));
+	from_geohash.AddFunction(
+	    ScalarFunction({LogicalType::VARCHAR, LogicalType::INTEGER}, geo_type, GeoFunctions::GeometryFromGeoHashFunction));
+
+	CreateScalarFunctionInfo from_geohash_func_info(from_geohash);
+	catalog.AddFunction(*con.context, &from_geohash_func_info);
 
 	// ST_X
 	ScalarFunctionSet get_x("st_x");
