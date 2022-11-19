@@ -173,6 +173,21 @@ GSERIALIZED *Geometry::FromGeoHash(string_t hash, int precision) {
 	return postgis.LWGEOM_from_GeoHash(&hash.GetString()[0], precision);
 }
 
+GSERIALIZED *Geometry::LWGEOM_boundary(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_boundary(geom);
+}
+
+int Geometry::LWGEOM_dimension(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_dimension(geom);
+}
+
+std::vector<GSERIALIZED *> Geometry::LWGEOM_dump(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_dump(geom);
+}
+
 double Geometry::Distance(GSERIALIZED *g1, GSERIALIZED *g2) {
 	Postgis postgis;
 	return postgis.ST_distance(g1, g2);

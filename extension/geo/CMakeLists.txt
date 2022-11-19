@@ -24,6 +24,7 @@ set(GEO_EXTENSION_FILES
     postgis/lwgeom_in_geojson.cpp
     postgis/lwgeom_in_geohash.cpp
     postgis/lwgeom_box.cpp
+    postgis/lwgeom_dump.cpp
     liblwgeom/lwin_wkt.cpp
     liblwgeom/lwin_wkb.cpp
     liblwgeom/lwutil.cpp
@@ -57,6 +58,7 @@ set(GEO_EXTENSION_FILES
     liblwgeom/lwcurvepoly.cpp
     liblwgeom/lwmpoly.cpp
     liblwgeom/lwiterator.cpp
+    liblwgeom/lwpsurface.cpp
     parser/lwin_wkt_lex.cpp
     parser/lwin_wkt_parse.cpp
     libpgcommon/lwgeom_pg.cpp

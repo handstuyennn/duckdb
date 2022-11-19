@@ -677,6 +677,8 @@ extern double distance2d_pt_pt(const POINT2D *p1, const POINT2D *p2);
 extern double lwgeom_mindistance2d(const LWGEOM *lw1, const LWGEOM *lw2);
 extern double lwgeom_mindistance2d_tolerance(const LWGEOM *lw1, const LWGEOM *lw2, double tolerance);
 
+extern int lwgeom_dimension(const LWGEOM *geom);
+
 /**
  * @brief Check whether or not a lwgeom is big enough to warrant a bounding box.
  *

@@ -835,6 +835,90 @@ void GeoFunctions::GeometryFromGeoHashFunction(DataChunk &args, ExpressionState 
 	}
 }
 
+struct BoundaryUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA geom) {
+		if (geom.GetSize() == 0) {
+			return geom;
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		if (!gser) {
+			return string_t();
+		}
+		auto gserBoundary = Geometry::LWGEOM_boundary(gser);
+		if (!gserBoundary) {
+			throw ConversionException("Failure in geometry boundary: could not getting boundary from geom");
+		}
+		idx_t size = Geometry::GetGeometrySize(gserBoundary);
+		auto base = Geometry::GetBase(gserBoundary);
+		Geometry::DestroyGeometry(gser);
+		Geometry::DestroyGeometry(gserBoundary);
+		return string_t((const char *)base, size);
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryBoundaryUnaryExecutor(Vector &geom, Vector &result, idx_t count) {
+	UnaryExecutor::Execute<TA, TR, BoundaryUnaryOperator>(geom, result, count);
+}
+
+void GeoFunctions::GeometryBoundaryFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &geom_arg = args.data[0];
+	GeometryBoundaryUnaryExecutor<string_t, string_t>(geom_arg, result, args.size());
+}
+
+struct DimensionUnaryOperator {
+	template <class TA, class TR>
+	static inline TR Operation(TA geom) {
+		if (geom.GetSize() == 0) {
+			return -1;
+		}
+		auto gser = Geometry::GetGserialized(geom);
+		if (!gser) {
+			throw ConversionException("Failure in geometry dimension: could not getting dimension from geom");
+			return -1;
+		}
+		auto dimension = Geometry::LWGEOM_dimension(gser);
+		Geometry::DestroyGeometry(gser);
+		return dimension;
+	}
+};
+
+template <typename TA, typename TR>
+static void GeometryDimensionUnaryExecutor(Vector &geom, Vector &result, idx_t count) {
+	UnaryExecutor::Execute<TA, TR, DimensionUnaryOperator>(geom, result, count);
+}
+
+void GeoFunctions::GeometryDimensionFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	auto &geom_arg = args.data[0];
+	GeometryDimensionUnaryExecutor<string_t, int>(geom_arg, result, args.size());
+}
+
+void GeoFunctions::GeometryDumpFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+	D_ASSERT(args.GetTypes().size() == 1);
+	auto &geom_arg = args.data[0];
+	auto child_type = ListType::GetChildType(result.GetType());
+
+	auto geom = args.GetValue(0, 0).GetValueUnsafe<string_t>();
+
+	auto gser = Geometry::GetGserialized(geom);
+	auto gserArray = Geometry::LWGEOM_dump(gser);
+
+	vector<Value> geom_values;
+	for (idx_t i = 0; i < gserArray.size(); i++) {
+		auto gserChild = gserArray[i];
+		idx_t rv_size = Geometry::GetGeometrySize(gserChild);
+		auto base = Geometry::GetBase(gserChild);
+		Geometry::DestroyGeometry(gserChild);
+		auto value = Value::BLOB((const_data_ptr_t)base, rv_size);
+		value.type().CopyAuxInfo(child_type);
+		geom_values.emplace_back(value);
+	}
+	auto val = Value::LIST(child_type, geom_values);
+	result.Reference(val);
+	Geometry::DestroyGeometry(gser);
+}
+
 struct GetXUnaryOperator {
 	template <class TA, class TR>
 	static inline TR Operation(TA text) {

@@ -7,6 +7,7 @@
 #include "postgis/lwgeom_geos.hpp"
 #include "postgis/lwgeom_inout.hpp"
 #include "postgis/lwgeom_ogc.hpp"
+#include "postgis/lwgeom_dump.hpp"
 #include "postgis/lwgeom_in_geohash.hpp"
 
 namespace duckdb {
@@ -94,6 +95,18 @@ GSERIALIZED *Postgis::LWGEOM_from_WKB(const char *bytea_wkb, size_t byte_size, i
 
 GSERIALIZED *Postgis::LWGEOM_from_GeoHash(char *hash, int precision) {
 	return duckdb::LWGEOM_from_GeoHash(hash, precision);
+}
+
+GSERIALIZED *Postgis::LWGEOM_boundary(GSERIALIZED *geom) {
+	return duckdb::LWGEOM_boundary(geom);
+}
+
+int Postgis::LWGEOM_dimension(GSERIALIZED *geom) {
+	return duckdb::LWGEOM_dimension(geom);
+}
+
+std::vector<GSERIALIZED *> Postgis::LWGEOM_dump(GSERIALIZED *geom) {
+	return duckdb::LWGEOM_dump(geom);
 }
 
 double Postgis::ST_distance(GSERIALIZED *geom1, GSERIALIZED *geom2) {

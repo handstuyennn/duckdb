@@ -60,6 +60,11 @@ public:
 	static GSERIALIZED *FromWKB(const char *text, size_t byte_size, int srid);
 	static GSERIALIZED *FromGeoHash(string_t hash, int precision = -1);
 
+	static GSERIALIZED *LWGEOM_boundary(GSERIALIZED *geom);
+
+	static int LWGEOM_dimension(GSERIALIZED *geom);
+	static std::vector<GSERIALIZED *> LWGEOM_dump(GSERIALIZED *geom);
+
 	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2);
 	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid);
 

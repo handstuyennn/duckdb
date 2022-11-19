@@ -42,6 +42,13 @@ void GeoExtension::Load(DuckDB &db) {
 	info.internal = true;
 	catalog.CreateType(*con.context, &info);
 
+	// add geo casts
+	auto &config = DBConfig::GetConfig(*con.context);
+
+	auto &casts = config.GetCastFunctions();
+	casts.RegisterCastFunction(LogicalType::VARCHAR, geo_type, GeoFunctions::CastVarcharToGEO, 100);
+	casts.RegisterCastFunction(geo_type, LogicalType::VARCHAR, GeoFunctions::CastGeoToVarchar);
+
 	// add geo functions
 	// ST_MAKEPOINT / ST_GEOGPOINT
 	ScalarFunctionSet make_point("st_makepoint");
@@ -116,7 +123,8 @@ void GeoExtension::Load(DuckDB &db) {
 
 	// ST_GEOMFROMGEOJSON
 	ScalarFunctionSet geomfromjson_from("st_geomfromgeojson");
-	geomfromjson_from.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryGeomFromGeoJsonFunction));
+	geomfromjson_from.AddFunction(
+	    ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryGeomFromGeoJsonFunction));
 
 	CreateScalarFunctionInfo geomfromjson_from_func_info(geomfromjson_from);
 	catalog.AddFunction(*con.context, &geomfromjson_from_func_info);
@@ -160,12 +168,34 @@ void GeoExtension::Load(DuckDB &db) {
 
 	// ST_GEOMFROMGEOHASH
 	ScalarFunctionSet from_geohash("st_geomfromgeohash");
-	from_geohash.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryFromGeoHashFunction));
 	from_geohash.AddFunction(
-	    ScalarFunction({LogicalType::VARCHAR, LogicalType::INTEGER}, geo_type, GeoFunctions::GeometryFromGeoHashFunction));
+	    ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryFromGeoHashFunction));
+	from_geohash.AddFunction(ScalarFunction({LogicalType::VARCHAR, LogicalType::INTEGER}, geo_type,
+	                                        GeoFunctions::GeometryFromGeoHashFunction));
 
 	CreateScalarFunctionInfo from_geohash_func_info(from_geohash);
 	catalog.AddFunction(*con.context, &from_geohash_func_info);
+
+	// ST_BOUNDARY
+	ScalarFunctionSet boundary("st_boundary");
+	boundary.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryBoundaryFunction));
+
+	CreateScalarFunctionInfo boundary_func_info(boundary);
+	catalog.AddFunction(*con.context, &boundary_func_info);
+
+	// ST_DIMENSION
+	ScalarFunctionSet dimension("st_dimension");
+	dimension.AddFunction(ScalarFunction({geo_type}, LogicalType::INTEGER, GeoFunctions::GeometryDimensionFunction));
+
+	CreateScalarFunctionInfo dimension_func_info(dimension);
+	catalog.AddFunction(*con.context, &dimension_func_info);
+
+	// ST_DUMP
+	ScalarFunctionSet dump("st_dump");
+	dump.AddFunction(ScalarFunction({geo_type}, LogicalType::LIST(geo_type), GeoFunctions::GeometryDumpFunction));
+
+	CreateScalarFunctionInfo dump_func_info(dump);
+	catalog.AddFunction(*con.context, &dump_func_info);
 
 	// ST_X
 	ScalarFunctionSet get_x("st_x");
@@ -173,13 +203,6 @@ void GeoExtension::Load(DuckDB &db) {
 
 	CreateScalarFunctionInfo get_x_func_info(get_x);
 	catalog.AddFunction(*con.context, &get_x_func_info);
-
-	// add geo casts
-	auto &config = DBConfig::GetConfig(*con.context);
-
-	auto &casts = config.GetCastFunctions();
-	casts.RegisterCastFunction(LogicalType::VARCHAR, geo_type, GeoFunctions::CastVarcharToGEO, 100);
-	casts.RegisterCastFunction(geo_type, LogicalType::VARCHAR, GeoFunctions::CastGeoToVarchar);
 
 	con.Commit();
 }
