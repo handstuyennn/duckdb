@@ -63,6 +63,9 @@ int main() {
 	// auto rv8 = con.Query("SELECT g::VARCHAR FROM geometries;");
 	// rv8->Print();
 
-	auto rv9 = con.Query("SELECT ST_GEOHASH(ST_MAKEPOINT(-122.35, 47.62), 10);");
+	auto rv9 = con.Query("SELECT ST_AsText(ST_PointN(ST_GeomFromText('CIRCULARSTRING(1 2, 3 2, 1 2)'), 2));");
 	rv9->Print();
+
+	// auto rv10 = con.Query("SELECT ST_MAKEPOINT(2.22, 2.33);");
+	// rv10->Print();
 }
