@@ -274,8 +274,12 @@ Value TransformPythonValue(py::handle ele, const LogicalType &target_type, bool 
 		return Value::UUID(string_val);
 	}
 	case PythonObjectType::Datetime: {
-		auto isnull_result = py::module::import("pandas").attr("isnull")(ele);
-		bool is_nat = string(py::str(isnull_result)) == "True";
+		auto &import_cache = *DuckDBPyConnection::ImportCache();
+		bool is_nat = false;
+		if (import_cache.pandas.isnull.IsLoaded()) {
+			auto isnull_result = import_cache.pandas.isnull()(ele);
+			is_nat = string(py::str(isnull_result)) == "True";
+		}
 		if (is_nat) {
 			return Value();
 		}
@@ -298,8 +302,9 @@ Value TransformPythonValue(py::handle ele, const LogicalType &target_type, bool 
 		return ele.cast<string>();
 	case PythonObjectType::ByteArray: {
 		auto byte_array = ele.ptr();
-		auto bytes = PyByteArray_AsString(byte_array);
-		return Value::BLOB_RAW(bytes);
+		const_data_ptr_t bytes = (const_data_ptr_t)PyByteArray_AsString(byte_array);
+		idx_t byte_length = PyByteArray_GET_SIZE(byte_array);
+		return Value::BLOB(bytes, byte_length);
 	}
 	case PythonObjectType::MemoryView: {
 		py::memoryview py_view = ele.cast<py::memoryview>();

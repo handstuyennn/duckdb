@@ -88,8 +88,6 @@ void DuckDBPyConnection::Initialize(py::handle &m) {
 	         py::arg("df") = py::none())
 	    .def("from_arrow", &DuckDBPyConnection::FromArrow, "Create a relation object from an Arrow object",
 	         py::arg("arrow_object"))
-	    .def("df", &DuckDBPyConnection::FromDF,
-	         "Create a relation object from the Data.Frame in df. This is an alias of from_df", py::arg("df"))
 	    .def("from_csv_auto", &DuckDBPyConnection::FromCsvAuto,
 	         "Create a relation object from the CSV file in file_name", py::arg("file_name"))
 	    .def("from_parquet", &DuckDBPyConnection::FromParquet,
@@ -100,6 +98,8 @@ void DuckDBPyConnection::Initialize(py::handle &m) {
 	    .def("get_substrait", &DuckDBPyConnection::GetSubstrait, "Serialize a query to protobuf", py::arg("query"))
 	    .def("get_substrait_json", &DuckDBPyConnection::GetSubstraitJSON,
 	         "Serialize a query to protobuf on the JSON format", py::arg("query"))
+	    .def("from_substrait_json", &DuckDBPyConnection::FromSubstraitJSON,
+	         "Create a query object from a JSON protobuf plan", py::arg("json"))
 	    .def("get_table_names", &DuckDBPyConnection::GetTableNames, "Extract the required table names from a query",
 	         py::arg("query"))
 	    .def("__enter__", &DuckDBPyConnection::Enter)
@@ -126,6 +126,12 @@ static unique_ptr<QueryResult> CompletePendingQuery(PendingQueryResult &pending_
 	PendingExecutionResult execution_result;
 	do {
 		execution_result = pending_query.ExecuteTask();
+		{
+			py::gil_scoped_acquire gil;
+			if (PyErr_CheckSignals() != 0) {
+				throw std::runtime_error("Query interrupted");
+			}
+		}
 	} while (execution_result == PendingExecutionResult::RESULT_NOT_READY);
 	if (execution_result == PendingExecutionResult::EXECUTION_ERROR) {
 		pending_query.ThrowError();
@@ -429,6 +435,16 @@ unique_ptr<DuckDBPyRelation> DuckDBPyConnection::GetSubstraitJSON(const string &
 	return make_unique<DuckDBPyRelation>(connection->TableFunction("get_substrait_json", params)->Alias(query));
 }
 
+unique_ptr<DuckDBPyRelation> DuckDBPyConnection::FromSubstraitJSON(const string &json) {
+	if (!connection) {
+		throw ConnectionException("Connection has already been closed");
+	}
+	string name = "from_substrait_" + GenerateRandomName();
+	vector<Value> params;
+	params.emplace_back(json);
+	return make_unique<DuckDBPyRelation>(connection->TableFunction("from_substrait_json", params)->Alias(name));
+}
+
 unordered_set<string> DuckDBPyConnection::GetTableNames(const string &query) {
 	if (!connection) {
 		throw ConnectionException("Connection has already been closed");
@@ -491,6 +507,9 @@ void DuckDBPyConnection::LoadExtension(const string &extension) {
 
 // cursor() is stupid
 shared_ptr<DuckDBPyConnection> DuckDBPyConnection::Cursor() {
+	if (!connection) {
+		throw ConnectionException("Connection has already been closed");
+	}
 	auto res = make_shared<DuckDBPyConnection>();
 	res->database = database;
 	res->connection = make_unique<Connection>(*res->database);
