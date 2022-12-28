@@ -23,7 +23,7 @@ ignored_files = ['tpch_constants.hpp', 'tpcds_constants.hpp', '_generated', 'tpc
                  'yyjson.cpp', 'yyjson.hpp', 'duckdb_pdqsort.hpp', 'stubdata.cpp',
                  'nf_calendar.cpp', 'nf_calendar.h', 'nf_localedata.cpp', 'nf_localedata.h', 'nf_zformat.cpp', 'nf_zformat.h', 'expr.cc',
                  'lwin_wkt_parse.hpp', 'lwin_wkt_lex.cpp', 'lwin_wkt_parse.cpp']
-ignored_directories = ['.eggs', '__pycache__', 'icu', 'dbgen', os.path.join('tools', 'pythonpkg', 'duckdb'),
+ignored_directories = ['.eggs', '__pycache__', 'dbgen', os.path.join('tools', 'pythonpkg', 'duckdb'),
                        os.path.join('tools', 'pythonpkg', 'build'), os.path.join('tools', 'rpkg', 'src', 'duckdb'),
                        os.path.join('tools', 'rpkg', 'inst', 'include', 'cpp11'),
                        os.path.join('extension', 'tpcds', 'dsdgen'), os.path.join('extension', 'jemalloc', 'jemalloc'),

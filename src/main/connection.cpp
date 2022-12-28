@@ -136,7 +136,7 @@ unique_ptr<QueryResult> Connection::QueryParamsRecursive(const string &query, ve
 }
 
 unique_ptr<TableDescription> Connection::TableInfo(const string &table_name) {
-	return TableInfo(DEFAULT_SCHEMA, table_name);
+	return TableInfo(INVALID_SCHEMA, table_name);
 }
 
 unique_ptr<TableDescription> Connection::TableInfo(const string &schema_name, const string &table_name) {
@@ -171,7 +171,7 @@ shared_ptr<Relation> Connection::Table(const string &table_name) {
 shared_ptr<Relation> Connection::Table(const string &schema_name, const string &table_name) {
 	auto table_info = TableInfo(schema_name, table_name);
 	if (!table_info) {
-		throw Exception("Table does not exist!");
+		throw CatalogException("Table '%s' does not exist!", table_name);
 	}
 	return make_shared<TableRelation>(context, move(table_info));
 }
@@ -241,6 +241,13 @@ shared_ptr<Relation> Connection::ReadCSV(const string &csv_file, const vector<st
 		column_list.push_back(move(col_list.GetColumnMutable(LogicalIndex(0))));
 	}
 	return make_shared<ReadCSVRelation>(context, csv_file, move(column_list));
+}
+
+shared_ptr<Relation> Connection::ReadParquet(const string &parquet_file, bool binary_as_string) {
+	vector<Value> params;
+	params.emplace_back(parquet_file);
+	named_parameter_map_t named_parameters({{"binary_as_string", Value::BOOLEAN(binary_as_string)}});
+	return TableFunction("parquet_scan", params, named_parameters)->Alias(parquet_file);
 }
 
 unordered_set<string> Connection::GetTableNames(const string &query) {
