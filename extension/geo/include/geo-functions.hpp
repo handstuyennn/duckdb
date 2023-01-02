@@ -26,8 +26,6 @@ struct GeoFunctions {
 	static void GeometryGeoHashFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryGeogFromFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryGeomFromGeoJsonFunction(DataChunk &args, ExpressionState &state, Vector &result);
-	static void GeometryDistanceFunction(DataChunk &args, ExpressionState &state, Vector &result);
-	static void GeometryCentroidFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryFromTextFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryFromWKBFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryFromGeoHashFunction(DataChunk &args, ExpressionState &state, Vector &result);
@@ -46,8 +44,43 @@ struct GeoFunctions {
 	static void GeometryNumGeometriesFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryNumPointsFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryPointNFunction(DataChunk &args, ExpressionState &state, Vector &result);
-
+	static void GeometryStartPointFunction(DataChunk &args, ExpressionState &state, Vector &result);
 	static void GeometryGetXFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryGetYFunction(DataChunk &args, ExpressionState &state, Vector &result);
+
+	// **Transformations (10)**:
+	static void GeometryDifferenceFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryClosestPointFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryUnionFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryUnionArrayFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryIntersectionFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometrySimplifyFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryCentroidFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryConvexhullFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometrySnapToGridFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryBufferFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryBufferTextFunction(DataChunk &args, ExpressionState &state, Vector &result);
+
+	// **Predicates (9)**
+	static void GeometryEqualsFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryContainsFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryTouchesFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryWithinFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryIntersectsFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryCoversFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryCoveredByFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryDisjointFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryDWithinFunction(DataChunk &args, ExpressionState &state, Vector &result);
+
+	// **Measures (9)**
+	static void GeometryDistanceFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryAreaFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryAngleFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryPerimeterFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryAzimuthFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryLengthFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryBoundingBoxFunction(DataChunk &args, ExpressionState &state, Vector &result);
+	static void GeometryMaxDistanceFunction(DataChunk &args, ExpressionState &state, Vector &result);
 };
 
 } // namespace duckdb

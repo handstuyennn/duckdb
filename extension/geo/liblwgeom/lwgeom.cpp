@@ -1,3 +1,28 @@
+/**********************************************************************
+ *
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright (C) 2001-2006 Refractions Research Inc.
+ * Copyright (C) 2017-2018 Daniel Baston <dbaston@gmail.com>
+ *
+ **********************************************************************/
+
 #include "liblwgeom/liblwgeom.hpp"
 #include "liblwgeom/liblwgeom_internal.hpp"
 #include "liblwgeom/lwinline.hpp"
@@ -11,6 +36,24 @@ LWCOLLECTION *lwgeom_as_lwcollection(const LWGEOM *lwgeom) {
 		return NULL;
 	if (lwgeom_is_collection(lwgeom))
 		return (LWCOLLECTION *)lwgeom;
+	else
+		return NULL;
+}
+
+LWMPOLY *lwgeom_as_lwmpoly(const LWGEOM *lwgeom) {
+	if (lwgeom == NULL)
+		return NULL;
+	if (lwgeom->type == MULTIPOLYGONTYPE)
+		return (LWMPOLY *)lwgeom;
+	else
+		return NULL;
+}
+
+LWMPOINT *lwgeom_as_lwmpoint(const LWGEOM *lwgeom) {
+	if (lwgeom == NULL)
+		return NULL;
+	if (lwgeom->type == MULTIPOINTTYPE)
+		return (LWMPOINT *)lwgeom;
 	else
 		return NULL;
 }
@@ -111,6 +154,36 @@ LWGEOM *lwpoint_as_lwgeom(const LWPOINT *obj) {
 	return (LWGEOM *)obj;
 }
 
+/**
+ * Deep-clone an #LWGEOM object. #POINTARRAY <em>are</em> copied.
+ */
+LWGEOM *lwgeom_clone_deep(const LWGEOM *lwgeom) {
+	switch (lwgeom->type) {
+	case POINTTYPE:
+	case LINETYPE:
+	case CIRCSTRINGTYPE:
+	case TRIANGLETYPE:
+		return (LWGEOM *)lwline_clone_deep((LWLINE *)lwgeom);
+	case POLYGONTYPE:
+		return (LWGEOM *)lwpoly_clone_deep((LWPOLY *)lwgeom);
+	case COMPOUNDTYPE:
+	case CURVEPOLYTYPE:
+	case MULTICURVETYPE:
+	case MULTISURFACETYPE:
+	case MULTIPOINTTYPE:
+	case MULTILINETYPE:
+	case MULTIPOLYGONTYPE:
+	case POLYHEDRALSURFACETYPE:
+	case TINTYPE:
+	case COLLECTIONTYPE:
+		return (LWGEOM *)lwcollection_clone_deep((LWCOLLECTION *)lwgeom);
+	default: {
+		lwerror("lwgeom_clone_deep: Unknown geometry type: %s", lwtype_name(lwgeom->type));
+		return NULL;
+	}
+	}
+}
+
 void lwgeom_set_srid(LWGEOM *geom, int32_t srid) {
 	uint32_t i;
 
@@ -135,6 +208,12 @@ int lwgeom_has_z(const LWGEOM *geom) {
 	if (!geom)
 		return LW_FALSE;
 	return FLAGS_GET_Z(geom->flags);
+}
+
+int lwgeom_has_m(const LWGEOM *geom) {
+	if (!geom)
+		return LW_FALSE;
+	return FLAGS_GET_M(geom->flags);
 }
 
 int lwgeom_needs_bbox(const LWGEOM *geom) {
@@ -242,9 +321,10 @@ int lwgeom_dimension(const LWGEOM *geom) {
 		}
 		return maxdim;
 	}
-	default:
-		// lwerror("%s: unsupported input geometry type: %s", __func__, lwtype_name(geom->type));
+	default: {
+		lwerror("%s: unsupported input geometry type: %s", __func__, lwtype_name(geom->type));
 		return -1;
+	}
 	}
 	return -1;
 }
@@ -254,6 +334,13 @@ int lwgeom_has_srid(const LWGEOM *geom) {
 		return LW_TRUE;
 
 	return LW_FALSE;
+}
+
+void lwgeom_drop_bbox(LWGEOM *lwgeom) {
+	if (lwgeom->bbox)
+		lwfree(lwgeom->bbox);
+	lwgeom->bbox = NULL;
+	FLAGS_SET_BBOX(lwgeom->flags, 0);
 }
 
 /**
@@ -271,6 +358,11 @@ void lwgeom_add_bbox(LWGEOM *lwgeom) {
 	FLAGS_SET_BBOX(lwgeom->flags, 1);
 	lwgeom->bbox = gbox_new(lwgeom->flags);
 	lwgeom_calculate_gbox(lwgeom, lwgeom->bbox);
+}
+
+void lwgeom_refresh_bbox(LWGEOM *lwgeom) {
+	lwgeom_drop_bbox(lwgeom);
+	lwgeom_add_bbox(lwgeom);
 }
 
 void lwgeom_free(LWGEOM *lwgeom) {
@@ -307,17 +399,23 @@ void lwgeom_free(LWGEOM *lwgeom) {
 		lwmline_free((LWMLINE *)lwgeom);
 		break;
 
+	case MULTIPOLYGONTYPE:
+		lwmpoly_free((LWMPOLY *)lwgeom);
+		break;
+
 	case CURVEPOLYTYPE:
 	case COMPOUNDTYPE:
 	case MULTICURVETYPE:
 	case MULTISURFACETYPE:
-	case COLLECTIONTYPE:
+	case COLLECTIONTYPE: {
 		lwcollection_free((LWCOLLECTION *)lwgeom);
 		break;
+	}
 
-	default:
-		// lwerror("lwgeom_free called with unknown type (%d) %s", lwgeom->type, lwtype_name(lwgeom->type));
+	default: {
+		lwerror("lwgeom_free called with unknown type (%d) %s", lwgeom->type, lwtype_name(lwgeom->type));
 		return;
+	}
 	}
 	return;
 }
@@ -351,9 +449,10 @@ LWGEOM *lwgeom_force_dims(const LWGEOM *geom, int hasz, int hasm, double zval, d
 		return lwcollection_as_lwgeom(lwcollection_force_dims((LWCOLLECTION *)geom, hasz, hasm, zval, mval));
 		// Need to do with postgis
 
-	default:
-		// lwerror("lwgeom_force_2d: unsupported geom type: %s", lwtype_name(geom->type));
+	default: {
+		lwerror("lwgeom_force_2d: unsupported geom type: %s", lwtype_name(geom->type));
 		return NULL;
+	}
 	}
 }
 
@@ -443,9 +542,10 @@ int lwgeom_startpoint(const LWGEOM *lwgeom, POINT4D *pt) {
 	case POLYHEDRALSURFACETYPE:
 		return lwcollection_startpoint((LWCOLLECTION *)lwgeom, pt);
 	// Need to do with postgis
-	default:
-		// lwerror("lwgeom_startpoint: unsupported geometry type: %s", lwtype_name(lwgeom->type));
+	default: {
+		lwerror("lwgeom_startpoint: unsupported geometry type: %s", lwtype_name(lwgeom->type));
 		return LW_FAILURE;
+	}
 	}
 }
 
@@ -486,6 +586,297 @@ int lwgeom_is_closed(const LWGEOM *geom) {
 
 	/* All non-linear non-collection types we will call closed */
 	return LW_TRUE;
+}
+
+LWGEOM *lwgeom_construct_empty(uint8_t type, int32_t srid, char hasz, char hasm) {
+	switch (type) {
+	case POINTTYPE:
+		return lwpoint_as_lwgeom(lwpoint_construct_empty(srid, hasz, hasm));
+	case LINETYPE:
+		return lwline_as_lwgeom(lwline_construct_empty(srid, hasz, hasm));
+	case POLYGONTYPE:
+		return lwpoly_as_lwgeom(lwpoly_construct_empty(srid, hasz, hasm));
+	case CURVEPOLYTYPE:
+		return lwcurvepoly_as_lwgeom(lwcurvepoly_construct_empty(srid, hasz, hasm));
+	case CIRCSTRINGTYPE:
+		return lwcircstring_as_lwgeom(lwcircstring_construct_empty(srid, hasz, hasm));
+	case TRIANGLETYPE:
+		return lwtriangle_as_lwgeom(lwtriangle_construct_empty(srid, hasz, hasm));
+	case COMPOUNDTYPE:
+	case MULTIPOINTTYPE:
+	case MULTILINETYPE:
+	case MULTIPOLYGONTYPE:
+	case COLLECTIONTYPE:
+		return lwcollection_as_lwgeom(lwcollection_construct_empty(type, srid, hasz, hasm));
+	default: {
+		lwerror("lwgeom_construct_empty: unsupported geometry type: %s", lwtype_name(type));
+		return NULL;
+	}
+	}
+}
+
+/**************************************************************/
+
+int lwgeom_simplify_in_place(LWGEOM *geom, double epsilon, int preserve_collapsed) {
+	int modified = LW_FALSE;
+	switch (geom->type) {
+	/* No-op! Cannot simplify points or triangles */
+	case POINTTYPE:
+		return modified;
+	case TRIANGLETYPE: {
+		if (preserve_collapsed)
+			return modified;
+		LWTRIANGLE *t = lwgeom_as_lwtriangle(geom);
+		POINTARRAY *pa = t->points;
+		ptarray_simplify_in_place(pa, epsilon, 0);
+		if (pa->npoints < 3) {
+			pa->npoints = 0;
+			modified = LW_TRUE;
+		}
+		break;
+	}
+	case LINETYPE: {
+		LWLINE *g = (LWLINE *)(geom);
+		POINTARRAY *pa = g->points;
+		uint32_t in_npoints = pa->npoints;
+		ptarray_simplify_in_place(pa, epsilon, 2);
+		modified = in_npoints != pa->npoints;
+		/* Invalid output */
+		if (pa->npoints == 1 && pa->maxpoints > 1) {
+			/* Use first point as last point */
+			if (preserve_collapsed) {
+				pa->npoints = 2;
+				ptarray_copy_point(pa, 0, 1);
+			}
+			/* Finish the collapse process */
+			else {
+				pa->npoints = 0;
+			}
+		}
+		/* Duped output, force collapse */
+		if (pa->npoints == 2 && !preserve_collapsed) {
+			if (p2d_same(getPoint2d_cp(pa, 0), getPoint2d_cp(pa, 1)))
+				pa->npoints = 0;
+		}
+		break;
+	}
+	case POLYGONTYPE: {
+		uint32_t i, j = 0;
+		LWPOLY *g = (LWPOLY *)(geom);
+		for (i = 0; i < g->nrings; i++) {
+			POINTARRAY *pa = g->rings[i];
+			/* Only stop collapse on first ring */
+			int minpoints = (preserve_collapsed && i == 0) ? 4 : 0;
+			/* Skip zero'ed out rings */
+			if (!pa)
+				continue;
+			uint32_t in_npoints = pa->npoints;
+			ptarray_simplify_in_place(pa, epsilon, minpoints);
+			modified |= in_npoints != pa->npoints;
+			/* Drop collapsed rings */
+			if (pa->npoints < 4) {
+				if (i == 0) {
+					/* If the outter ring is dropped, all can be dropped */
+					for (i = 0; i < g->nrings; i++) {
+						pa = g->rings[i];
+						ptarray_free(pa);
+					}
+					break;
+				} else {
+					/* Drop this inner ring only */
+					ptarray_free(pa);
+					continue;
+				}
+			}
+			g->rings[j++] = pa;
+		}
+		/* Update ring count */
+		g->nrings = j;
+		break;
+	}
+	/* Can process all multi* types as generic collection */
+	case MULTIPOINTTYPE:
+	case MULTILINETYPE:
+	case MULTIPOLYGONTYPE:
+	case TINTYPE:
+	case COLLECTIONTYPE: {
+		uint32_t i, j = 0;
+		LWCOLLECTION *col = (LWCOLLECTION *)geom;
+		for (i = 0; i < col->ngeoms; i++) {
+			LWGEOM *g = col->geoms[i];
+			if (!g)
+				continue;
+			modified |= lwgeom_simplify_in_place(g, epsilon, preserve_collapsed);
+			/* Drop zero'ed out geometries */
+			if (lwgeom_is_empty(g)) {
+				lwgeom_free(g);
+				continue;
+			}
+			col->geoms[j++] = g;
+		}
+		/* Update geometry count */
+		col->ngeoms = j;
+		break;
+	}
+	default: {
+		lwerror("%s: unsupported geometry type: %s", __func__, lwtype_name(geom->type));
+		break;
+	}
+	}
+
+	if (modified) {
+		lwgeom_drop_bbox(geom);
+	}
+	return modified;
+}
+
+void lwgeom_grid_in_place(LWGEOM *geom, const gridspec *grid) {
+	if (!geom)
+		return;
+	switch (geom->type) {
+	case POINTTYPE: {
+		LWPOINT *pt = (LWPOINT *)(geom);
+		ptarray_grid_in_place(pt->point, grid);
+		return;
+	}
+	case CIRCSTRINGTYPE:
+	case TRIANGLETYPE:
+	case LINETYPE: {
+		LWLINE *ln = (LWLINE *)(geom);
+		ptarray_grid_in_place(ln->points, grid);
+		/* For invalid line, return an EMPTY */
+		if (ln->points->npoints < 2)
+			ln->points->npoints = 0;
+		return;
+	}
+	case POLYGONTYPE: {
+		LWPOLY *ply = (LWPOLY *)(geom);
+		if (!ply->rings)
+			return;
+
+		/* Check first the external ring */
+		uint32_t i = 0;
+		POINTARRAY *pa = ply->rings[0];
+		ptarray_grid_in_place(pa, grid);
+		if (pa->npoints < 4) {
+			/* External ring collapsed: free everything */
+			for (i = 0; i < ply->nrings; i++) {
+				ptarray_free(ply->rings[i]);
+			}
+			ply->nrings = 0;
+			return;
+		}
+
+		/* Check the other rings */
+		uint32_t j = 1;
+		for (i = 1; i < ply->nrings; i++) {
+			POINTARRAY *pa = ply->rings[i];
+			ptarray_grid_in_place(pa, grid);
+
+			/* Skip bad rings */
+			if (pa->npoints >= 4) {
+				ply->rings[j++] = pa;
+			} else {
+				ptarray_free(pa);
+			}
+		}
+		/* Adjust ring count appropriately */
+		ply->nrings = j;
+		return;
+	}
+	case MULTIPOINTTYPE:
+	case MULTILINETYPE:
+	case MULTIPOLYGONTYPE:
+	case TINTYPE:
+	case COLLECTIONTYPE:
+	case COMPOUNDTYPE: {
+		LWCOLLECTION *col = (LWCOLLECTION *)(geom);
+		uint32_t i, j = 0;
+		if (!col->geoms)
+			return;
+		for (i = 0; i < col->ngeoms; i++) {
+			LWGEOM *g = col->geoms[i];
+			lwgeom_grid_in_place(g, grid);
+			/* Empty geoms need to be freed */
+			/* before we move on */
+			if (lwgeom_is_empty(g)) {
+				lwgeom_free(g);
+				continue;
+			}
+			col->geoms[j++] = g;
+		}
+		col->ngeoms = j;
+		return;
+	}
+	default: {
+		lwerror("%s: Unsupported geometry type: %s", __func__, lwtype_name(geom->type));
+		return;
+	}
+	}
+}
+
+LWGEOM *lwgeom_grid(const LWGEOM *lwgeom, const gridspec *grid) {
+	LWGEOM *lwgeom_out = lwgeom_clone_deep(lwgeom);
+	lwgeom_grid_in_place(lwgeom_out, grid);
+	return lwgeom_out;
+}
+
+double lwgeom_area(const LWGEOM *geom) {
+	int type = geom->type;
+
+	if (type == POLYGONTYPE)
+		return lwpoly_area((LWPOLY *)geom);
+	else if (type == CURVEPOLYTYPE)
+		return lwcurvepoly_area((LWCURVEPOLY *)geom);
+	else if (type == TRIANGLETYPE)
+		return lwtriangle_area((LWTRIANGLE *)geom);
+	else if (lwgeom_is_collection(geom)) {
+		double area = 0.0;
+		uint32_t i;
+		LWCOLLECTION *col = (LWCOLLECTION *)geom;
+		for (i = 0; i < col->ngeoms; i++)
+			area += lwgeom_area(col->geoms[i]);
+		return area;
+	} else
+		return 0.0;
+}
+
+double lwgeom_perimeter_2d(const LWGEOM *geom) {
+	int type = geom->type;
+	if (type == POLYGONTYPE)
+		return lwpoly_perimeter_2d((LWPOLY *)geom);
+	else if (type == CURVEPOLYTYPE)
+		return lwcurvepoly_perimeter_2d((LWCURVEPOLY *)geom);
+	else if (type == TRIANGLETYPE)
+		return lwtriangle_perimeter_2d((LWTRIANGLE *)geom);
+	else if (lwgeom_is_collection(geom)) {
+		double perimeter = 0.0;
+		uint32_t i;
+		LWCOLLECTION *col = (LWCOLLECTION *)geom;
+		for (i = 0; i < col->ngeoms; i++)
+			perimeter += lwgeom_perimeter_2d(col->geoms[i]);
+		return perimeter;
+	} else
+		return 0.0;
+}
+
+double lwgeom_length_2d(const LWGEOM *geom) {
+	int type = geom->type;
+	if (type == LINETYPE)
+		return lwline_length_2d((LWLINE *)geom);
+	else if (type == CIRCSTRINGTYPE)
+		return lwcircstring_length_2d((LWCIRCSTRING *)geom);
+	else if (type == COMPOUNDTYPE)
+		return lwcompound_length_2d((LWCOMPOUND *)geom);
+	else if (lwgeom_is_collection(geom)) {
+		double length = 0.0;
+		uint32_t i;
+		LWCOLLECTION *col = (LWCOLLECTION *)geom;
+		for (i = 0; i < col->ngeoms; i++)
+			length += lwgeom_length_2d(col->geoms[i]);
+		return length;
+	} else
+		return 0.0;
 }
 
 } // namespace duckdb

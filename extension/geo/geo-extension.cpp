@@ -28,11 +28,20 @@ static unique_ptr<FunctionData> MakePolygonArrayBind(ClientContext &context, Sca
 	return nullptr;
 }
 
+static unique_ptr<FunctionData> GeometryUnionArrayBind(ClientContext &context, ScalarFunction &bound_function,
+                                                       vector<unique_ptr<Expression>> &arguments) {
+	if (arguments[0]->HasParameter()) {
+		throw ParameterNotResolvedException();
+	}
+	bound_function.arguments[0] = arguments[0]->return_type;
+	return nullptr;
+}
+
 void GeoExtension::Load(DuckDB &db) {
 	Connection con(db);
 	con.BeginTransaction();
 
-	auto &catalog = Catalog::GetCatalog(*con.context);
+	auto &catalog = Catalog::GetSystemCatalog(*con.context);
 
 	auto geo_type = LogicalType(LogicalTypeId::BLOB);
 	geo_type.SetAlias("GEOMETRY");
@@ -129,25 +138,6 @@ void GeoExtension::Load(DuckDB &db) {
 	CreateScalarFunctionInfo geomfromjson_from_func_info(geomfromjson_from);
 	catalog.AddFunction(*con.context, &geomfromjson_from_func_info);
 
-	// ST_DISTANCE
-	ScalarFunctionSet distance("st_distance");
-	distance.AddFunction(
-	    ScalarFunction({geo_type, geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryDistanceFunction));
-	distance.AddFunction(ScalarFunction({geo_type, geo_type, LogicalType::BOOLEAN}, LogicalType::DOUBLE,
-	                                    GeoFunctions::GeometryDistanceFunction));
-
-	CreateScalarFunctionInfo distance_func_info(distance);
-	catalog.AddFunction(*con.context, &distance_func_info);
-
-	// ST_CENTROID
-	ScalarFunctionSet centroid("st_centroid");
-	centroid.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryCentroidFunction));
-	centroid.AddFunction(
-	    ScalarFunction({geo_type, LogicalType::BOOLEAN}, geo_type, GeoFunctions::GeometryCentroidFunction));
-
-	CreateScalarFunctionInfo centroid_func_info(centroid);
-	catalog.AddFunction(*con.context, &centroid_func_info);
-
 	// ST_GEOMFROMTEXT
 	ScalarFunctionSet from_text("st_geomfromtext");
 	from_text.AddFunction(ScalarFunction({LogicalType::VARCHAR}, geo_type, GeoFunctions::GeometryFromTextFunction));
@@ -175,13 +165,6 @@ void GeoExtension::Load(DuckDB &db) {
 
 	CreateScalarFunctionInfo from_geohash_func_info(from_geohash);
 	catalog.AddFunction(*con.context, &from_geohash_func_info);
-
-	// ST_BOUNDARY
-	ScalarFunctionSet boundary("st_boundary");
-	boundary.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryBoundaryFunction));
-
-	CreateScalarFunctionInfo boundary_func_info(boundary);
-	catalog.AddFunction(*con.context, &boundary_func_info);
 
 	// ST_DIMENSION
 	ScalarFunctionSet dimension("st_dimension");
@@ -228,24 +211,21 @@ void GeoExtension::Load(DuckDB &db) {
 
 	// ST_ISEMPTY
 	ScalarFunctionSet isempty("st_isempty");
-	isempty.AddFunction(
-	    ScalarFunction({geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryIsEmptyFunction));
+	isempty.AddFunction(ScalarFunction({geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryIsEmptyFunction));
 
 	CreateScalarFunctionInfo isempty_func_info(isempty);
 	catalog.AddFunction(*con.context, &isempty_func_info);
 
 	// ST_ISRING
 	ScalarFunctionSet isring("st_isring");
-	isring.AddFunction(
-	    ScalarFunction({geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryIsRingFunction));
+	isring.AddFunction(ScalarFunction({geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryIsRingFunction));
 
 	CreateScalarFunctionInfo isring_func_info(isring);
 	catalog.AddFunction(*con.context, &isring_func_info);
 
 	// ST_NPOINTS
 	ScalarFunctionSet npoints("st_npoints");
-	npoints.AddFunction(
-	    ScalarFunction({geo_type}, LogicalType::INTEGER, GeoFunctions::GeometryNPointsFunction));
+	npoints.AddFunction(ScalarFunction({geo_type}, LogicalType::INTEGER, GeoFunctions::GeometryNPointsFunction));
 
 	CreateScalarFunctionInfo npoints_func_info(npoints);
 	catalog.AddFunction(*con.context, &npoints_func_info);
@@ -260,8 +240,7 @@ void GeoExtension::Load(DuckDB &db) {
 
 	// ST_NUMPOINTS
 	ScalarFunctionSet numpoints("st_numpoints");
-	numpoints.AddFunction(
-	    ScalarFunction({geo_type}, LogicalType::INTEGER, GeoFunctions::GeometryNumPointsFunction));
+	numpoints.AddFunction(ScalarFunction({geo_type}, LogicalType::INTEGER, GeoFunctions::GeometryNumPointsFunction));
 
 	CreateScalarFunctionInfo numpoints_func_info(numpoints);
 	catalog.AddFunction(*con.context, &numpoints_func_info);
@@ -274,12 +253,254 @@ void GeoExtension::Load(DuckDB &db) {
 	CreateScalarFunctionInfo pointn_func_info(pointn);
 	catalog.AddFunction(*con.context, &pointn_func_info);
 
+	// ST_STARTPOINT
+	ScalarFunctionSet startpoint("st_startpoint");
+	startpoint.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryStartPointFunction));
+
+	CreateScalarFunctionInfo startpoint_func_info(startpoint);
+	catalog.AddFunction(*con.context, &startpoint_func_info);
+
 	// ST_X
 	ScalarFunctionSet get_x("st_x");
 	get_x.AddFunction(ScalarFunction({geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryGetXFunction));
 
 	CreateScalarFunctionInfo get_x_func_info(get_x);
 	catalog.AddFunction(*con.context, &get_x_func_info);
+
+	// ST_X
+	ScalarFunctionSet get_y("st_y");
+	get_y.AddFunction(ScalarFunction({geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryGetYFunction));
+
+	CreateScalarFunctionInfo get_y_func_info(get_y);
+	catalog.AddFunction(*con.context, &get_y_func_info);
+
+	//**Transformations (10)**:
+	// ST_DIFFERENCE
+	ScalarFunctionSet difference("st_difference");
+	difference.AddFunction(ScalarFunction({geo_type, geo_type}, geo_type, GeoFunctions::GeometryDifferenceFunction));
+
+	CreateScalarFunctionInfo difference_func_info(difference);
+	catalog.AddFunction(*con.context, &difference_func_info);
+
+	// ST_CLOSESTPOINT
+	ScalarFunctionSet closestpoint("st_closestpoint");
+	closestpoint.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, geo_type, GeoFunctions::GeometryClosestPointFunction));
+
+	CreateScalarFunctionInfo closestpoint_func_info(closestpoint);
+	catalog.AddFunction(*con.context, &closestpoint_func_info);
+
+	// ST_BOUNDARY
+	ScalarFunctionSet boundary("st_boundary");
+	boundary.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryBoundaryFunction));
+
+	CreateScalarFunctionInfo boundary_func_info(boundary);
+	catalog.AddFunction(*con.context, &boundary_func_info);
+
+	// ST_UNION
+	ScalarFunctionSet geom_union("st_union");
+	geom_union.AddFunction(ScalarFunction({geo_type, geo_type}, geo_type, GeoFunctions::GeometryUnionFunction));
+	geom_union.AddFunction(ScalarFunction({LogicalType::LIST(geo_type)}, geo_type,
+	                                      GeoFunctions::GeometryUnionArrayFunction, GeometryUnionArrayBind));
+
+	CreateScalarFunctionInfo union_func_info(geom_union);
+	catalog.AddFunction(*con.context, &union_func_info);
+
+	// ST_INTERSECTION
+	ScalarFunctionSet intersection("st_intersection");
+	intersection.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, geo_type, GeoFunctions::GeometryIntersectionFunction));
+
+	CreateScalarFunctionInfo intersection_func_info(intersection);
+	catalog.AddFunction(*con.context, &intersection_func_info);
+
+	// ST_CENTROID
+	ScalarFunctionSet centroid("st_centroid");
+	centroid.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryCentroidFunction));
+	centroid.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::BOOLEAN}, geo_type, GeoFunctions::GeometryCentroidFunction));
+
+	CreateScalarFunctionInfo centroid_func_info(centroid);
+	catalog.AddFunction(*con.context, &centroid_func_info);
+
+	// ST_SIMPLIFY
+	ScalarFunctionSet simplify("st_simplify");
+	simplify.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::DOUBLE}, geo_type, GeoFunctions::GeometrySimplifyFunction));
+
+	CreateScalarFunctionInfo simplify_func_info(simplify);
+	catalog.AddFunction(*con.context, &simplify_func_info);
+
+	// ST_CONVEXHULL
+	ScalarFunctionSet convexhull("st_convexhull");
+	convexhull.AddFunction(ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryConvexhullFunction));
+
+	CreateScalarFunctionInfo convexhull_func_info(convexhull);
+	catalog.AddFunction(*con.context, &convexhull_func_info);
+
+	// ST_SNAPTOGRID
+	ScalarFunctionSet snaptogrid("st_snaptogrid");
+	snaptogrid.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::DOUBLE}, geo_type, GeoFunctions::GeometrySnapToGridFunction));
+
+	CreateScalarFunctionInfo snaptogrid_func_info(snaptogrid);
+	catalog.AddFunction(*con.context, &snaptogrid_func_info);
+
+	// ST_BUFFER
+	ScalarFunctionSet buffer("st_buffer");
+	buffer.AddFunction(ScalarFunction({geo_type, LogicalType::DOUBLE}, geo_type, GeoFunctions::GeometryBufferFunction));
+	buffer.AddFunction(ScalarFunction({geo_type, LogicalType::DOUBLE, LogicalType::VARCHAR}, geo_type,
+	                                  GeoFunctions::GeometryBufferTextFunction));
+
+	CreateScalarFunctionInfo buffer_func_info(buffer);
+	catalog.AddFunction(*con.context, &buffer_func_info);
+
+	// ST_EQUALS
+	ScalarFunctionSet equals("st_equals");
+	equals.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryEqualsFunction));
+
+	CreateScalarFunctionInfo equals_func_info(equals);
+	catalog.AddFunction(*con.context, &equals_func_info);
+
+	// ST_CONTAINS
+	ScalarFunctionSet contains("st_contains");
+	contains.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryContainsFunction));
+
+	CreateScalarFunctionInfo contains_func_info(contains);
+	catalog.AddFunction(*con.context, &contains_func_info);
+
+	// ST_TOUCHES
+	ScalarFunctionSet touches("st_touches");
+	touches.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryTouchesFunction));
+
+	CreateScalarFunctionInfo touches_func_info(touches);
+	catalog.AddFunction(*con.context, &touches_func_info);
+
+	// ST_WITHIN
+	ScalarFunctionSet within("st_within");
+	within.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryWithinFunction));
+
+	CreateScalarFunctionInfo within_func_info(within);
+	catalog.AddFunction(*con.context, &within_func_info);
+
+	// ST_INTERSECTS
+	ScalarFunctionSet intersects("st_intersects");
+	intersects.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryIntersectsFunction));
+
+	CreateScalarFunctionInfo intersects_func_info(intersects);
+	catalog.AddFunction(*con.context, &intersects_func_info);
+
+	// ST_COVERS
+	ScalarFunctionSet covers("st_covers");
+	covers.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryCoversFunction));
+
+	CreateScalarFunctionInfo covers_func_info(covers);
+	catalog.AddFunction(*con.context, &covers_func_info);
+
+	// ST_COVEREDBY
+	ScalarFunctionSet coveredby("st_coveredby");
+	coveredby.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryCoveredByFunction));
+
+	CreateScalarFunctionInfo coveredby_func_info(coveredby);
+	catalog.AddFunction(*con.context, &coveredby_func_info);
+
+	// ST_DISJOINT
+	ScalarFunctionSet disjoint("st_disjoint");
+	disjoint.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::BOOLEAN, GeoFunctions::GeometryDisjointFunction));
+
+	CreateScalarFunctionInfo disjoint_func_info(disjoint);
+	catalog.AddFunction(*con.context, &disjoint_func_info);
+
+	// ST_DWITHIN
+	ScalarFunctionSet dwithin("st_dwithin");
+	dwithin.AddFunction(ScalarFunction({geo_type, geo_type, LogicalType::DOUBLE}, LogicalType::BOOLEAN,
+	                                   GeoFunctions::GeometryDWithinFunction));
+
+	CreateScalarFunctionInfo dwithin_func_info(dwithin);
+	catalog.AddFunction(*con.context, &dwithin_func_info);
+
+	// ST_AREA
+	ScalarFunctionSet area("st_area");
+	area.AddFunction(ScalarFunction({geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryAreaFunction));
+	area.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::BOOLEAN}, LogicalType::DOUBLE, GeoFunctions::GeometryAreaFunction));
+
+	CreateScalarFunctionInfo area_func_info(area);
+	catalog.AddFunction(*con.context, &area_func_info);
+
+	// ST_ANGLE
+	ScalarFunctionSet angle("st_angle");
+	angle.AddFunction(
+	    ScalarFunction({geo_type, geo_type, geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryAngleFunction));
+
+	CreateScalarFunctionInfo angle_func_info(angle);
+	catalog.AddFunction(*con.context, &angle_func_info);
+
+	// ST_PERIMETER
+	ScalarFunctionSet perimeter("st_perimeter");
+	perimeter.AddFunction(ScalarFunction({geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryPerimeterFunction));
+	perimeter.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::BOOLEAN}, LogicalType::DOUBLE, GeoFunctions::GeometryPerimeterFunction));
+
+	CreateScalarFunctionInfo perimeter_func_info(perimeter);
+	catalog.AddFunction(*con.context, &perimeter_func_info);
+
+	// ST_AZIMUTH
+	ScalarFunctionSet azimuth("st_azimuth");
+	azimuth.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryAzimuthFunction));
+
+	CreateScalarFunctionInfo azimuth_func_info(azimuth);
+	catalog.AddFunction(*con.context, &azimuth_func_info);
+
+	// ST_DISTANCE
+	ScalarFunctionSet distance("st_distance");
+	distance.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryDistanceFunction));
+	distance.AddFunction(ScalarFunction({geo_type, geo_type, LogicalType::BOOLEAN}, LogicalType::DOUBLE,
+	                                    GeoFunctions::GeometryDistanceFunction));
+
+	CreateScalarFunctionInfo distance_func_info(distance);
+	catalog.AddFunction(*con.context, &distance_func_info);
+
+	// ST_LENGTH
+	ScalarFunctionSet length("st_length");
+	length.AddFunction(ScalarFunction({geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryLengthFunction));
+	length.AddFunction(
+	    ScalarFunction({geo_type, LogicalType::BOOLEAN}, LogicalType::DOUBLE, GeoFunctions::GeometryLengthFunction));
+
+	CreateScalarFunctionInfo length_func_info(length);
+	catalog.AddFunction(*con.context, &length_func_info);
+
+	// ST_BOUNDINGBOX (ALIAS: ST_ENVELOPE)
+	ScalarFunctionSet boundingbox("st_boundingbox");
+	ScalarFunctionSet envelope("st_envelope");
+	auto boundingboxUnaryFunc = ScalarFunction({geo_type}, geo_type, GeoFunctions::GeometryBoundingBoxFunction);
+
+	boundingbox.AddFunction(boundingboxUnaryFunc);
+	envelope.AddFunction(boundingboxUnaryFunc);
+
+	CreateScalarFunctionInfo boundingbox_func_info(boundingbox);
+	catalog.AddFunction(*con.context, &boundingbox_func_info);
+
+	CreateScalarFunctionInfo envelope_func_info(envelope);
+	catalog.AddFunction(*con.context, &envelope_func_info);
+
+	// ST_MAXDISTANCE
+	ScalarFunctionSet maxdistance("st_maxdistance");
+	maxdistance.AddFunction(
+	    ScalarFunction({geo_type, geo_type}, LogicalType::DOUBLE, GeoFunctions::GeometryMaxDistanceFunction));
+
+	CreateScalarFunctionInfo maxdistance_func_info(maxdistance);
+	catalog.AddFunction(*con.context, &maxdistance_func_info);
 
 	con.Commit();
 }

@@ -1,8 +1,34 @@
+/**********************************************************************
+ *
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright 2001-2005 Refractions Research Inc.
+ *
+ **********************************************************************/
+
 #include "postgis/lwgeom_ogc.hpp"
 
 #include "liblwgeom/gserialized.hpp"
+#include "liblwgeom/lwgeom_geos.hpp"
 #include "liblwgeom/lwinline.hpp"
 #include "libpgcommon/lwgeom_pg.hpp"
+#include "postgis/lwgeom_geos.hpp"
 
 namespace duckdb {
 
@@ -67,7 +93,7 @@ GSERIALIZED *LWGEOM_from_WKB(const char *bytea_wkb, size_t byte_size, int srid) 
 }
 
 GSERIALIZED *LWGEOM_boundary(GSERIALIZED *geom1) {
-	// GEOSGeometry *g1, *g3;
+	GEOSGeometry *g1, *g3;
 	GSERIALIZED *result;
 	LWGEOM *lwgeom;
 	int32_t srid;
@@ -92,42 +118,36 @@ GSERIALIZED *LWGEOM_boundary(GSERIALIZED *geom1) {
 		return result;
 	}
 
-	// initGEOS(lwpgnotice, lwgeom_geos_error);
+	initGEOS(lwnotice, lwgeom_geos_error);
 
-	// g1 = LWGEOM2GEOS(lwgeom, 0);
+	g1 = LWGEOM2GEOS(lwgeom, 0);
 	lwgeom_free(lwgeom);
 
-	// if (!g1)
-	// 	HANDLE_GEOS_ERROR("First argument geometry could not be converted to GEOS");
+	if (!g1)
+		throw "First argument geometry could not be converted to GEOS";
 
-	// g3 = GEOSBoundary(g1);
+	g3 = GEOSBoundary(g1);
 
-	// if (!g3) {
-	// 	GEOSGeom_destroy(g1);
-	// 	HANDLE_GEOS_ERROR("GEOSBoundary");
-	// }
+	if (!g3) {
+		GEOSGeom_destroy(g1);
+		throw "GEOSBoundary";
+	}
 
-	// POSTGIS_DEBUGF(3, "result: %s", GEOSGeomToWKT(g3));
+	GEOSSetSRID(g3, srid);
 
-	// GEOSSetSRID(g3, srid);
+	result = GEOS2POSTGIS(g3, gserialized_has_z(geom1));
 
-	// result = GEOS2POSTGIS(g3, gserialized_has_z(geom1));
+	if (!result) {
+		GEOSGeom_destroy(g1);
+		GEOSGeom_destroy(g3);
+		throw "GEOS2POSTGIS threw an error (result postgis geometry formation)!";
+		return nullptr;
+	}
 
-	// if (!result) {
-	// 	GEOSGeom_destroy(g1);
-	// 	GEOSGeom_destroy(g3);
-	// 	elog(NOTICE, "GEOS2POSTGIS threw an error (result postgis geometry "
-	// 	             "formation)!");
-	// 	PG_RETURN_NULL(); /* never get here */
-	// }
+	GEOSGeom_destroy(g1);
+	GEOSGeom_destroy(g3);
 
-	// GEOSGeom_destroy(g1);
-	// GEOSGeom_destroy(g3);
-
-	// PG_FREE_IF_COPY(geom1, 0);
-
-	// PG_RETURN_POINTER(result);
-	return nullptr;
+	return result;
 }
 
 /** @brief
@@ -149,19 +169,39 @@ int LWGEOM_dimension(GSERIALIZED *geom) {
 	return dimension;
 }
 
-double LWGEOM_x_point(const void *base, size_t size) {
-	LWGEOM *lwgeom = lwgeom_from_wkb(static_cast<const uint8_t *>(base), size, LW_PARSER_CHECK_NONE);
-	GSERIALIZED *geom = geometry_serialize(lwgeom);
+double LWGEOM_x_point(GSERIALIZED *geom) {
 	POINT4D pt;
 
-	if (gserialized_get_type(geom) != POINTTYPE)
+	if (gserialized_get_type(geom) != POINTTYPE) {
 		// lwpgerror("Argument to ST_X() must have type POINT");
+		throw Exception("Argument to ST_X() must have type POINT");
 		return LW_FAILURE;
+	}
 
 	if (gserialized_peek_first_point(geom, &pt) == LW_FAILURE) {
 		return LW_FAILURE;
 	}
 	return pt.x;
+}
+
+/**
+ * Y(GEOMETRY) -- return Y value of the point.
+ * 	Raise an error if input is not a point.
+ */
+double LWGEOM_y_point(GSERIALIZED *geom) {
+	POINT4D pt;
+
+	if (gserialized_get_type(geom) != POINTTYPE) {
+		// lwpgerror("Argument to ST_Y() must have type POINT");
+		throw Exception("Argument to ST_Y() must have type POINT");
+		return LW_FAILURE;
+	}
+
+	if (gserialized_peek_first_point(geom, &pt) == LW_FAILURE) {
+		// PG_RETURN_NULL();
+		return LW_FAILURE;
+	}
+	return pt.y;
 }
 
 /** EndPoint(GEOMETRY) -- find the first linestring in GEOMETRY,
@@ -288,6 +328,33 @@ GSERIALIZED *LWGEOM_pointn_linestring(GSERIALIZED *geom, int where) {
 	auto ret = geometry_serialize(lwpoint_as_lwgeom(lwpoint));
 
 	lwgeom_free((LWGEOM *)lwpoint);
+	return ret;
+}
+
+/**
+ * ST_StartPoint(GEOMETRY)
+ * @return the first point of a linestring.
+ * 		Return NULL if there is no LINESTRING
+ */
+GSERIALIZED *LWGEOM_startpoint_linestring(GSERIALIZED *geom) {
+	LWGEOM *lwgeom = lwgeom_from_gserialized(geom);
+	LWPOINT *lwpoint = NULL;
+	int type = lwgeom->type;
+
+	if (type == LINETYPE || type == CIRCSTRINGTYPE) {
+		lwpoint = lwline_get_lwpoint((LWLINE *)lwgeom, 0);
+	} else if (type == COMPOUNDTYPE) {
+		lwpoint = lwcompound_get_startpoint((LWCOMPOUND *)lwgeom);
+	}
+
+	lwgeom_free(lwgeom);
+
+	if (!lwpoint)
+		return nullptr;
+
+	auto ret = geometry_serialize(lwpoint_as_lwgeom(lwpoint));
+	lwgeom_free((LWGEOM *)lwpoint);
+
 	return ret;
 }
 

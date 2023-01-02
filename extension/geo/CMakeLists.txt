@@ -4,6 +4,7 @@ project(GEOExtension)
 
 include_directories(include)
 include_directories(third_party/json/include)
+include_directories(third_party/geos/include)
 
 add_subdirectory(third_party)
 
@@ -15,6 +16,7 @@ set(GEO_EXTENSION_FILES
     geometry.cpp
     postgis/lwgeom_inout.cpp
     postgis/lwgeom_functions_basic.cpp
+    postgis/lwgeom_functions_analytic.cpp
     postgis/geography_measurement.cpp
     postgis/geography_measurement_trees.cpp
     postgis/lwgeom_ogc.cpp
@@ -60,6 +62,8 @@ set(GEO_EXTENSION_FILES
     liblwgeom/lwiterator.cpp
     liblwgeom/lwpsurface.cpp
     liblwgeom/lwtin.cpp
+    liblwgeom/lwgeom_geos.cpp
+    liblwgeom/lwstroke.cpp
     parser/lwin_wkt_lex.cpp
     parser/lwin_wkt_parse.cpp
     libpgcommon/lwgeom_pg.cpp

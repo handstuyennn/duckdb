@@ -1,3 +1,28 @@
+/**********************************************************************
+ *
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright 2009 Paul Ramsey <pramsey@cleverelephant.ca>
+ * Copyright 2009 David Skea <David.Skea@gov.bc.ca>
+ *
+ **********************************************************************/
+
 #include "liblwgeom/lwgeodetic.hpp"
 
 #include "liblwgeom/liblwgeom_internal.hpp"
@@ -192,6 +217,36 @@ void robust_cross_product(const GEOGRAPHIC_POINT *p, const GEOGRAPHIC_POINT *q, 
 	a->x = sin_p_lat_minus_q_lat * sin_lon_qpp * cos_lon_qmp - sin_p_lat_plus_q_lat * cos_lon_qpp * sin_lon_qmp;
 	a->y = sin_p_lat_minus_q_lat * cos_lon_qpp * cos_lon_qmp + sin_p_lat_plus_q_lat * sin_lon_qpp * sin_lon_qmp;
 	a->z = cos(p->lat) * cos(q->lat) * sin(q->lon - p->lon);
+}
+
+int crosses_dateline(const GEOGRAPHIC_POINT *s, const GEOGRAPHIC_POINT *e) {
+	double sign_s = SIGNUM(s->lon);
+	double sign_e = SIGNUM(e->lon);
+	double ss = fabs(s->lon);
+	double ee = fabs(e->lon);
+	if (sign_s == sign_e) {
+		return LW_FALSE;
+	} else {
+		double dl = ss + ee;
+		if (dl < M_PI)
+			return LW_FALSE;
+		else if (FP_EQUALS(dl, M_PI))
+			return LW_FALSE;
+		else
+			return LW_TRUE;
+	}
+}
+
+/**
+ * Shift a point around by a number of radians
+ */
+void point_shift(GEOGRAPHIC_POINT *p, double shift) {
+	double lon = p->lon + shift;
+	if (lon > M_PI)
+		p->lon = -1.0 * M_PI + (lon - M_PI);
+	else
+		p->lon = lon;
+	return;
 }
 
 /**
@@ -431,7 +486,7 @@ int edge_calculate_gbox(const POINT3D *A1, const POINT3D *A2, GBOX *gbox) {
 
 	/* Error out on antipodal edge */
 	if (FP_EQUALS(A1->x, -1 * A2->x) && FP_EQUALS(A1->y, -1 * A2->y) && FP_EQUALS(A1->z, -1 * A2->z)) {
-		// lwerror("Antipodal (180 degrees long) edge detected!");
+		lwerror("Antipodal (180 degrees long) edge detected!");
 		return LW_FAILURE;
 	}
 
@@ -638,8 +693,8 @@ int lwgeom_calculate_gbox_geodetic(const LWGEOM *geom, GBOX *gbox) {
 		result = lwcollection_calculate_gbox_geodetic((LWCOLLECTION *)geom, gbox);
 		break;
 	default:
-		// lwerror("lwgeom_calculate_gbox_geodetic: unsupported input geometry type: %d - %s",
-		//         geom->type, lwtype_name(geom->type));
+		lwerror("lwgeom_calculate_gbox_geodetic: unsupported input geometry type: %d - %s", geom->type,
+		        lwtype_name(geom->type));
 		break;
 	}
 	return result;
@@ -724,6 +779,13 @@ double sphere_distance(const GEOGRAPHIC_POINT *s, const GEOGRAPHIC_POINT *e) {
 	double a = sqrt(a1 + a2);
 	double b = sin_lat_s * sin_lat_e + cos_lat_s * cos_lat_e * cos_d_lon;
 	return atan2(a, b);
+}
+
+/**
+ * Given two unit vectors, calculate their distance apart in radians.
+ */
+double sphere_distance_cartesian(const POINT3D *s, const POINT3D *e) {
+	return acos(FP_MIN(1.0, dot_product(s, e)));
 }
 
 /**
@@ -1144,7 +1206,7 @@ int gbox_pt_outside(const GBOX *gbox, POINT2D *pt_outside) {
 	}
 
 	/* This should never happen! */
-	// lwerror("BOOM! Could not generate outside point!");
+	lwerror("BOOM! Could not generate outside point!");
 	return LW_FAILURE;
 }
 
@@ -1221,12 +1283,273 @@ int lwgeom_check_geodetic(const LWGEOM *geom) {
 	case TINTYPE:
 	case COLLECTIONTYPE:
 		return lwcollection_check_geodetic((LWCOLLECTION *)geom);
-	default:
-		// lwerror("lwgeom_check_geodetic: unsupported input geometry type: %d - %s", geom->type,
-		// lwtype_name(geom->type));
+	default: {
+		lwerror("lwgeom_check_geodetic: unsupported input geometry type: %d - %s", geom->type, lwtype_name(geom->type));
 		return LW_FAILURE;
 	}
+	}
 	return LW_FALSE;
+}
+
+/**
+ * Returns the angle in radians at point B of the triangle formed by A-B-C
+ */
+static double sphere_angle(const GEOGRAPHIC_POINT *a, const GEOGRAPHIC_POINT *b, const GEOGRAPHIC_POINT *c) {
+	POINT3D normal1, normal2;
+	robust_cross_product(b, a, &normal1);
+	robust_cross_product(b, c, &normal2);
+	normalize(&normal1);
+	normalize(&normal2);
+	return sphere_distance_cartesian(&normal1, &normal2);
+}
+
+/**
+ * Computes the spherical area of a triangle. If C is to the left of A/B,
+ * the area is negative. If C is to the right of A/B, the area is positive.
+ *
+ * @param a The first triangle vertex.
+ * @param b The second triangle vertex.
+ * @param c The last triangle vertex.
+ * @return the signed area in radians.
+ */
+static double sphere_signed_area(const GEOGRAPHIC_POINT *a, const GEOGRAPHIC_POINT *b, const GEOGRAPHIC_POINT *c) {
+	double angle_a, angle_b, angle_c;
+	double area_radians = 0.0;
+	int side;
+	GEOGRAPHIC_EDGE e;
+
+	angle_a = sphere_angle(b, a, c);
+	angle_b = sphere_angle(a, b, c);
+	angle_c = sphere_angle(b, c, a);
+
+	area_radians = angle_a + angle_b + angle_c - M_PI;
+
+	/* What's the direction of the B/C edge? */
+	e.start = *a;
+	e.end = *b;
+	side = edge_point_side(&e, c);
+
+	/* Co-linear points implies no area */
+	if (side == 0)
+		return 0.0;
+
+	/* Add the sign to the area */
+	return side * area_radians;
+}
+
+/**
+ * Returns the area of the ring (ring must be closed) in square radians (surface of
+ * the sphere is 4*PI).
+ */
+double ptarray_area_sphere(const POINTARRAY *pa) {
+	uint32_t i;
+	const POINT2D *p;
+	GEOGRAPHIC_POINT a, b, c;
+	double area = 0.0;
+
+	/* Return zero on nonsensical inputs */
+	if (!pa || pa->npoints < 4)
+		return 0.0;
+
+	p = getPoint2d_cp(pa, 0);
+	geographic_point_init(p->x, p->y, &a);
+	p = getPoint2d_cp(pa, 1);
+	geographic_point_init(p->x, p->y, &b);
+
+	for (i = 2; i < pa->npoints - 1; i++) {
+		p = getPoint2d_cp(pa, i);
+		geographic_point_init(p->x, p->y, &c);
+		area += sphere_signed_area(&a, &b, &c);
+		b = c;
+	}
+
+	return fabs(area);
+}
+
+/**
+ * Calculate the area of an LWGEOM. Anything except POLYGON, MULTIPOLYGON
+ * and GEOMETRYCOLLECTION return zero immediately. Multi's recurse, polygons
+ * calculate external ring area and subtract internal ring area. A GBOX is
+ * required to calculate an outside point.
+ */
+double lwgeom_area_sphere(const LWGEOM *lwgeom, const SPHEROID *spheroid) {
+	int type;
+	double radius2 = spheroid->radius * spheroid->radius;
+
+	assert(lwgeom);
+
+	/* No area in nothing */
+	if (lwgeom_is_empty(lwgeom))
+		return 0.0;
+
+	/* Read the geometry type number */
+	type = lwgeom->type;
+
+	/* Anything but polygons and collections returns zero */
+	if (!(type == POLYGONTYPE || type == MULTIPOLYGONTYPE || type == COLLECTIONTYPE))
+		return 0.0;
+
+	/* Actually calculate area */
+	if (type == POLYGONTYPE) {
+		LWPOLY *poly = (LWPOLY *)lwgeom;
+		uint32_t i;
+		double area = 0.0;
+
+		/* Just in case there's no rings */
+		if (poly->nrings < 1)
+			return 0.0;
+
+		/* First, the area of the outer ring */
+		area += radius2 * ptarray_area_sphere(poly->rings[0]);
+
+		/* Subtract areas of inner rings */
+		for (i = 1; i < poly->nrings; i++) {
+			area -= radius2 * ptarray_area_sphere(poly->rings[i]);
+		}
+		return area;
+	}
+
+	/* Recurse into sub-geometries to get area */
+	if (type == MULTIPOLYGONTYPE || type == COLLECTIONTYPE) {
+		LWCOLLECTION *col = (LWCOLLECTION *)lwgeom;
+		uint32_t i;
+		double area = 0.0;
+
+		for (i = 0; i < col->ngeoms; i++) {
+			area += lwgeom_area_sphere(col->geoms[i], spheroid);
+		}
+		return area;
+	}
+
+	/* Shouldn't get here. */
+	return 0.0;
+}
+
+double ptarray_length_spheroid(const POINTARRAY *pa, const SPHEROID *s) {
+	GEOGRAPHIC_POINT a, b;
+	double za = 0.0, zb = 0.0;
+	POINT4D p;
+	uint32_t i;
+	int hasz = LW_FALSE;
+	double length = 0.0;
+	double seglength = 0.0;
+
+	/* Return zero on non-sensical inputs */
+	if (!pa || pa->npoints < 2)
+		return 0.0;
+
+	/* See if we have a third dimension */
+	hasz = FLAGS_GET_Z(pa->flags);
+
+	/* Initialize first point */
+	getPoint4d_p(pa, 0, &p);
+	geographic_point_init(p.x, p.y, &a);
+	if (hasz)
+		za = p.z;
+
+	/* Loop and sum the length for each segment */
+	for (i = 1; i < pa->npoints; i++) {
+		seglength = 0.0;
+		getPoint4d_p(pa, i, &p);
+		geographic_point_init(p.x, p.y, &b);
+		if (hasz)
+			zb = p.z;
+
+		/* Special sphere case */
+		if (s->a == s->b)
+			seglength = s->radius * sphere_distance(&a, &b);
+		/* Spheroid case */
+		else
+			seglength = spheroid_distance(&a, &b, s);
+
+		/* Add in the vertical displacement if we're in 3D */
+		if (hasz)
+			seglength = sqrt((zb - za) * (zb - za) + seglength * seglength);
+
+		/* Add this segment length to the total */
+		length += seglength;
+
+		/* B gets incremented in the next loop, so we save the value here */
+		a = b;
+		za = zb;
+	}
+	return length;
+}
+
+double lwgeom_length_spheroid(const LWGEOM *geom, const SPHEROID *s) {
+	int type;
+	uint32_t i = 0;
+	double length = 0.0;
+
+	assert(geom);
+
+	/* No area in nothing */
+	if (lwgeom_is_empty(geom))
+		return 0.0;
+
+	type = geom->type;
+
+	if (type == POINTTYPE || type == MULTIPOINTTYPE)
+		return 0.0;
+
+	if (type == LINETYPE)
+		return ptarray_length_spheroid(((LWLINE *)geom)->points, s);
+
+	if (type == POLYGONTYPE) {
+		LWPOLY *poly = (LWPOLY *)geom;
+		for (i = 0; i < poly->nrings; i++) {
+			length += ptarray_length_spheroid(poly->rings[i], s);
+		}
+		return length;
+	}
+
+	if (type == TRIANGLETYPE)
+		return ptarray_length_spheroid(((LWTRIANGLE *)geom)->points, s);
+
+	if (lwtype_is_collection(type)) {
+		LWCOLLECTION *col = (LWCOLLECTION *)geom;
+
+		for (i = 0; i < col->ngeoms; i++) {
+			length += lwgeom_length_spheroid(col->geoms[i], s);
+		}
+		return length;
+	}
+
+	lwerror("unsupported type passed to lwgeom_length_sphere");
+	return 0.0;
+}
+
+/**
+ * Calculate a bearing (azimuth) given a source and destination point.
+ * @param r - location of first point.
+ * @param s - location of second point.
+ * @param spheroid - spheroid definition.
+ * @return azimuth - azimuth in radians.
+ *
+ */
+double lwgeom_azumith_spheroid(const LWPOINT *r, const LWPOINT *s, const SPHEROID *spheroid) {
+	GEOGRAPHIC_POINT g1, g2;
+	double x1, y1, x2, y2, az;
+
+	/* Convert r to a geodetic point */
+	x1 = lwpoint_get_x(r);
+	y1 = lwpoint_get_y(r);
+	geographic_point_init(x1, y1, &g1);
+
+	/* Convert s to a geodetic point */
+	x2 = lwpoint_get_x(s);
+	y2 = lwpoint_get_y(s);
+	geographic_point_init(x2, y2, &g2);
+
+	/* Same point, return NaN */
+	if (FP_EQUALS(x1, x2) && FP_EQUALS(y1, y2)) {
+		return NAN;
+	}
+
+	/* Do the direction calculation */
+	az = spheroid_direction(&g1, &g2, spheroid);
+	/* Ensure result is positive */
+	return az > 0 ? az : M_PI - az;
 }
 
 } // namespace duckdb

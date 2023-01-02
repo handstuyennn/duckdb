@@ -1,3 +1,27 @@
+/**********************************************************************
+ *
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright 2008 Paul Ramsey
+ *
+ **********************************************************************/
+
 #include "liblwgeom/liblwgeom_internal.hpp"
 
 #include <cstring>
@@ -28,6 +52,43 @@ int p2d_same(const POINT2D *p1, const POINT2D *p2) {
 int lw_segment_side(const POINT2D *p1, const POINT2D *p2, const POINT2D *q) {
 	double side = ((q->x - p1->x) * (p2->y - p1->y) - (p2->x - p1->x) * (q->y - p1->y));
 	return SIGNUM(side);
+}
+
+int lw_arc_side(const POINT2D *A1, const POINT2D *A2, const POINT2D *A3, const POINT2D *Q) {
+	POINT2D C;
+	double radius_A;
+	double side_Q, side_A2;
+	double d;
+
+	side_Q = lw_segment_side(A1, A3, Q);
+	radius_A = lw_arc_center(A1, A2, A3, &C);
+	side_A2 = lw_segment_side(A1, A3, A2);
+
+	/* Linear case */
+	if (radius_A < 0)
+		return side_Q;
+
+	d = distance2d_pt_pt(Q, &C);
+
+	/* Q is on the arc boundary */
+	if (d == radius_A && side_Q == side_A2) {
+		return 0;
+	}
+
+	/* Q on A1-A3 line, so its on opposite side to A2 */
+	if (side_Q == 0) {
+		return -1 * side_A2;
+	}
+
+	/*
+	 * Q is inside the arc boundary, so it's not on the side we
+	 * might think from examining only the end points
+	 */
+	if (d < radius_A && side_Q == side_A2) {
+		side_Q *= -1;
+	}
+
+	return side_Q;
 }
 
 /**
@@ -81,6 +142,34 @@ double lw_arc_center(const POINT2D *p1, const POINT2D *p2, const POINT2D *p3, PO
 	cr = sqrt(pow(cx - p1->x, 2) + pow(cy - p1->y, 2));
 
 	return cr;
+}
+
+/**
+ * Returns true if P is on the same side of the plane partition
+ * defined by A1/A3 as A2 is. Only makes sense if P has already been
+ * determined to be on the circle defined by A1/A2/A3.
+ */
+int lw_pt_in_arc(const POINT2D *P, const POINT2D *A1, const POINT2D *A2, const POINT2D *A3) {
+	return lw_segment_side(A1, A3, A2) == lw_segment_side(A1, A3, P);
+}
+
+/**
+ * Returns true if P is between A1/A2. Only makes sense if P has already been
+ * deterined to be on the line defined by A1/A2.
+ */
+int lw_pt_in_seg(const POINT2D *P, const POINT2D *A1, const POINT2D *A2) {
+	return ((A1->x <= P->x && P->x < A2->x) || (A1->x >= P->x && P->x > A2->x)) ||
+	       ((A1->y <= P->y && P->y < A2->y) || (A1->y >= P->y && P->y > A2->y));
+}
+
+/**
+ * Returns true if arc A is actually a point (all vertices are the same) .
+ */
+int lw_arc_is_pt(const POINT2D *A1, const POINT2D *A2, const POINT2D *A3) {
+	if (A1->x == A2->x && A2->x == A3->x && A1->y == A2->y && A2->y == A3->y)
+		return LW_TRUE;
+	else
+		return LW_FALSE;
 }
 
 /*
@@ -204,9 +293,9 @@ void decode_geohash_bbox(char *geohash, double *lat, double *lon, int precision)
 		char c = tolower(geohash[i]);
 
 		/* Valid characters are all digits in base32 */
-		char *base32_pos = strchr(const_cast <char *>(base32), c);
+		char *base32_pos = strchr(const_cast<char *>(base32), c);
 		if (!base32_pos) {
-			// lwerror("%s: Invalid character '%c'", __func__, geohash[i]);
+			lwerror("%s: Invalid character '%c'", __func__, geohash[i]);
 			return;
 		}
 		char cd = base32_pos - base32;
@@ -319,8 +408,8 @@ lwvarlena_t *lwgeom_geohash(const LWGEOM *lwgeom, int precision) {
 
 	/* Return error if we are being fed something outside our working bounds */
 	if (gbox.xmin < -180 || gbox.ymin < -90 || gbox.xmax > 180 || gbox.ymax > 90) {
-		// lwerror("Geohash requires inputs in decimal degrees, got (%g %g, %g %g).", gbox.xmin, gbox.ymin, gbox.xmax,
-		//         gbox.ymax);
+		lwerror("Geohash requires inputs in decimal degrees, got (%g %g, %g %g).", gbox.xmin, gbox.ymin, gbox.xmax,
+		        gbox.ymax);
 		return NULL;
 	}
 
@@ -339,6 +428,64 @@ lwvarlena_t *lwgeom_geohash(const LWGEOM *lwgeom, int precision) {
 	** Possible change: return the point at the center of the precision bounds?
 	*/
 	return geohash_point(lon, lat, precision);
+}
+
+/**
+ * Returns the length of a circular arc segment
+ */
+double lw_arc_length(const POINT2D *A1, const POINT2D *A2, const POINT2D *A3) {
+	POINT2D C;
+	double radius_A, circumference_A;
+	int a2_side, clockwise;
+	double a1, a3;
+	double angle;
+
+	if (lw_arc_is_pt(A1, A2, A3))
+		return 0.0;
+
+	radius_A = lw_arc_center(A1, A2, A3, &C);
+
+	/* Co-linear! Return linear distance! */
+	if (radius_A < 0) {
+		double dx = A1->x - A3->x;
+		double dy = A1->y - A3->y;
+		return sqrt(dx * dx + dy * dy);
+	}
+
+	/* Closed circle! Return the circumference! */
+	circumference_A = M_PI * 2 * radius_A;
+	if (p2d_same(A1, A3))
+		return circumference_A;
+
+	/* Determine the orientation of the arc */
+	a2_side = lw_segment_side(A1, A3, A2);
+
+	/* The side of the A1/A3 line that A2 falls on dictates the sweep
+	   direction from A1 to A3. */
+	if (a2_side == -1)
+		clockwise = LW_TRUE;
+	else
+		clockwise = LW_FALSE;
+
+	/* Angles of each point that defines the arc section */
+	a1 = atan2(A1->y - C.y, A1->x - C.x);
+	a3 = atan2(A3->y - C.y, A3->x - C.x);
+
+	/* What's the sweep from A1 to A3? */
+	if (clockwise) {
+		if (a1 > a3)
+			angle = a1 - a3;
+		else
+			angle = 2 * M_PI + a1 - a3;
+	} else {
+		if (a3 > a1)
+			angle = a3 - a1;
+		else
+			angle = 2 * M_PI + a3 - a1;
+	}
+
+	/* Length as proportion of circumference */
+	return circumference_A * (angle / (2 * M_PI));
 }
 
 } // namespace duckdb

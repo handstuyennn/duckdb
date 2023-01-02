@@ -49,7 +49,7 @@ public:
 	static GSERIALIZED *MakePolygon(GSERIALIZED *geom, GSERIALIZED *gserArray[] = {}, int nelems = 0);
 
 	static lwvarlena_t *AsBinary(GSERIALIZED *gser, string text = "");
-	static std::string AsText(data_ptr_t base, size_t size, int max_digits = OUT_DEFAULT_DECIMAL_DIGITS);
+	static std::string AsText(GSERIALIZED *gser, int max_digits = OUT_DEFAULT_DECIMAL_DIGITS);
 	static lwvarlena_t *AsGeoJson(GSERIALIZED *gser, size_t m_dec_digits = OUT_DEFAULT_DECIMAL_DIGITS);
 	static lwvarlena_t *GeoHash(GSERIALIZED *gser, size_t m_chars = 0);
 
@@ -61,6 +61,41 @@ public:
 	static GSERIALIZED *FromGeoHash(string_t hash, int precision = -1);
 
 	static GSERIALIZED *LWGEOM_boundary(GSERIALIZED *geom);
+	static GSERIALIZED *Difference(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static GSERIALIZED *ClosestPoint(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static GSERIALIZED *GeometryUnion(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static GSERIALIZED *GeometryUnionGArray(GSERIALIZED *gserArray[], int nelems);
+	static GSERIALIZED *GeometryIntersection(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static GSERIALIZED *GeometrySimplify(GSERIALIZED *geom, double dist);
+	static GSERIALIZED *Centroid(GSERIALIZED *g);
+	static GSERIALIZED *Centroid(GSERIALIZED *g, bool use_spheroid);
+	static GSERIALIZED *Convexhull(GSERIALIZED *g);
+	static GSERIALIZED *GeometrySnapToGrid(GSERIALIZED *geom, double size);
+	static GSERIALIZED *GeometryBuffer(GSERIALIZED *geom, double radius);
+	static GSERIALIZED *GeometryBufferText(GSERIALIZED *geom, double radius, string styles_text);
+
+	static bool GeometryEquals(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryContains(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryTouches(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryWithin(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryIntersects(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryCovers(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryCoveredby(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryDisjoint(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static bool GeometryDWithin(GSERIALIZED *geom1, GSERIALIZED *geom2, double distance);
+
+	static double GeometryArea(GSERIALIZED *geom);
+	static double GeometryArea(GSERIALIZED *geom, bool use_spheroid);
+	static double GeometryAngle(GSERIALIZED *geom1, GSERIALIZED *geom2, GSERIALIZED *geom3);
+	static double GeometryPerimeter(GSERIALIZED *geom);
+	static double GeometryPerimeter(GSERIALIZED *geom, bool use_spheroid);
+	static double GeometryAzimuth(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	static double GeometryLength(GSERIALIZED *geom);
+	static double GeometryLength(GSERIALIZED *geom, bool use_spheroid);
+	static GSERIALIZED *GeometryBoundingBox(GSERIALIZED *geom);
+	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2);
+	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid);
+	static double MaxDistance(GSERIALIZED *g1, GSERIALIZED *g2);
 
 	static int LWGEOM_dimension(GSERIALIZED *geom);
 	static std::vector<GSERIALIZED *> LWGEOM_dump(GSERIALIZED *geom);
@@ -74,14 +109,9 @@ public:
 	static int NumGeometries(GSERIALIZED *geom);
 	static int NumPoints(GSERIALIZED *geom);
 	static GSERIALIZED *PointN(GSERIALIZED *geom, int index);
+	static GSERIALIZED *StartPoint(GSERIALIZED *geom);
+	static double XPoint(GSERIALIZED *geom);
+	static double YPoint(GSERIALIZED *geom);
 
-	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2);
-	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid);
-
-	static double XPoint(const void *data, size_t size);
-
-	static GSERIALIZED *Centroid(GSERIALIZED *g);
-
-	static GSERIALIZED *Centroid(GSERIALIZED *g, bool use_spheroid);
 };
 } // namespace duckdb

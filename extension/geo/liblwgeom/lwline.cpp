@@ -1,3 +1,28 @@
+/**********************************************************************
+ *
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright (C) 2012 Sandro Santilli <strk@kbt.io>
+ * Copyright (C) 2001-2006 Refractions Research Inc.
+ *
+ **********************************************************************/
+
 #include "liblwgeom/liblwgeom_internal.hpp"
 #include "liblwgeom/lwinline.hpp"
 
@@ -44,6 +69,37 @@ void lwline_free(LWLINE *line) {
 	if (line->points)
 		ptarray_free(line->points);
 	lwfree(line);
+}
+
+/* @brief Clone LWLINE object. Serialized point lists are not copied.
+ *
+ * @see ptarray_clone
+ */
+LWLINE *lwline_clone(const LWLINE *g) {
+	LWLINE *ret = (LWLINE *)lwalloc(sizeof(LWLINE));
+
+	memcpy(ret, g, sizeof(LWLINE));
+
+	ret->points = (POINTARRAY *)ptarray_clone(g->points);
+
+	if (g->bbox)
+		ret->bbox = gbox_copy(g->bbox);
+	return ret;
+}
+
+/* Deep clone LWLINE object. POINTARRAY *is* copied. */
+LWLINE *lwline_clone_deep(const LWLINE *g) {
+	LWLINE *ret = (LWLINE *)lwalloc(sizeof(LWLINE));
+
+	memcpy(ret, g, sizeof(LWLINE));
+
+	if (g->bbox)
+		ret->bbox = gbox_copy(g->bbox);
+	if (g->points)
+		ret->points = ptarray_clone_deep(g->points);
+	FLAGS_SET_READONLY(ret->flags, 0);
+
+	return ret;
 }
 
 LWLINE *lwline_force_dims(const LWLINE *line, int hasz, int hasm, double zval, double mval) {
@@ -121,7 +177,7 @@ LWLINE *lwline_from_lwgeom_array(int32_t srid, uint32_t ngeoms, LWGEOM **geoms) 
 			lwpointiterator_destroy(it);
 		} else {
 			ptarray_free(pa);
-			// lwerror("lwline_from_ptarray: invalid input type: %s", lwtype_name(g->type));
+			lwerror("lwline_from_ptarray: invalid input type: %s", lwtype_name(g->type));
 			return NULL;
 		}
 	}
@@ -154,6 +210,12 @@ LWPOINT *lwline_get_lwpoint(const LWLINE *line, uint32_t where) {
 	ptarray_append_point(pa, &pt, LW_TRUE);
 	lwpoint = lwpoint_construct(line->srid, NULL, pa);
 	return lwpoint;
+}
+
+double lwline_length_2d(const LWLINE *line) {
+	if (lwline_is_empty(line))
+		return 0.0;
+	return ptarray_length_2d(line->points);
 }
 
 } // namespace duckdb

@@ -25,6 +25,11 @@ int main() {
 	con.Query("INSERT INTO geometries VALUES (1, '127.0.0000.2', ST_MakePolygon('LINESTRING (0 0, 0 150, 150 150, 150 "
 	          "0, 0 0)', ['LINESTRING(20 20, 50 20, 50 50, 20 50, 20 20)'::GEOMETRY, 'LINESTRING (90 100, 90 80, 110 "
 	          "80, 110 100, 90 100)'::GEOMETRY]))");
+
+	auto create_rv = con.Query("CREATE TABLE geometries1 (g Geometry);");
+	create_rv->Print();
+	auto insert_rv = con.Query("INSERT INTO geometries1 VALUES('{\"type\":\"MultiPolygon\",\"coordinates\":[[[[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,32],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,32],[-117,32],[-117,32],[-117,32],[-116,32],[-116,32],[-116,32],[-116,32],[-116,32],[-116,32],[-116,32],[-116,32],[-116,32],[-116,32],[-117,32],[-117,32],[-117,32],[-117,32]],[[-117,33],[-117,33],[-117,33],[-117,33],[-117,33],[-117,32],[-117,33]]]]}'), ('{\"type\":\"MultiPolygon\",\"coordinates\":[[[[4,0],[0,-4],[-4,0],[0,4],[4,0]],[[2,0],[0,2],[-2,0],[0,-2],[2,0]]],[[[24,0],[20,-4],[16,0],[20,4],[24,0]],[[22,0],[20,2],[18,0],[20,-2],[22,0]]],[[[44,0],[40,-4],[36,0],[40,4],[44,0]],[[42,0],[40,2],[38,0],[40,-2],[42,0]]]]}')");
+	insert_rv->Print();
 	// con.Query("INSERT INTO geometries VALUES (2, '127.0.0000.3', ST_MakeLine(ST_MAKEPOINT(1,2),
 	// ST_MAKEPOINT(3,4)))"); auto rv2 = con.Query("INSERT INTO geometries VALUES (3, '127.0.0000.1', 'POINT(0 1)')");
 	// rv2->Print();
@@ -63,9 +68,15 @@ int main() {
 	// auto rv8 = con.Query("SELECT g::VARCHAR FROM geometries;");
 	// rv8->Print();
 
-	auto rv9 = con.Query("SELECT ST_AsText(ST_PointN(ST_GeomFromText('CIRCULARSTRING(1 2, 3 2, 1 2)'), 2));");
-	rv9->Print();
+	// auto rv10 = con.Query("SELECT ST_AsText(ST_Difference(ST_GeomFromText('MULTIPOINT(-118.58 38.38 5,-118.60 38.329
+	// 6,-118.614 38.281 7)'), ST_GeomFromText('POINT(-118.614 38.281 5)')));"); rv10->Print();
 
-	// auto rv10 = con.Query("SELECT ST_MAKEPOINT(2.22, 2.33);");
-	// rv10->Print();
+	// auto rv9 = con.Query("SELECT ST_MaxDistance('POINT(0 0)'::geometry, 'LINESTRING ( 2 2, 2 2 )'::geometry);");
+	// rv9->Print();
+
+	// auto rv10 = con.Query("SELECT ST_Union(ST_GeomFromText('LINESTRING(1 2, 3 4)'), ST_GeomFromText('LINESTRING(3 4,
+	// 4 5)'));"); rv10->Print();
+
+	// auto rv10 = con.Query("SELECT ST_AsText(ST_ClosestPoint('LINESTRING (20 80, 98 190, 110 180, 50 75 )', 'POINT(100
+	// 100)'));"); rv10->Print();
 }

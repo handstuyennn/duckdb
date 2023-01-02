@@ -18,9 +18,11 @@ string Geometry::GetString(string_t geometry, DataFormatType ftype) {
 		text = postgis.LWGEOM_asBinary(data, len);
 		break;
 
-	case DataFormatType::FORMAT_VALUE_TYPE_WKT:
-		text = postgis.LWGEOM_asText(data, len);
-		break;
+	case DataFormatType::FORMAT_VALUE_TYPE_WKT: {
+		auto gser = Geometry::GetGserialized(geometry);
+		text = postgis.LWGEOM_asText(gser);
+		Geometry::DestroyGeometry(gser);
+	} break;
 
 	case DataFormatType::FORMAT_VALUE_TYPE_GEOJSON:
 		text = postgis.LWGEOM_asGeoJson(data, len);
@@ -127,9 +129,9 @@ lwvarlena_t *Geometry::AsBinary(GSERIALIZED *geom, string text) {
 	return postgis.LWGEOM_asBinary(geom, text);
 }
 
-std::string Geometry::AsText(data_ptr_t base, size_t size, int max_digits) {
+std::string Geometry::AsText(GSERIALIZED *geom, int max_digits) {
 	Postgis postgis;
-	return postgis.LWGEOM_asText(base, size, max_digits);
+	return postgis.LWGEOM_asText(geom, max_digits);
 }
 
 lwvarlena_t *Geometry::AsGeoJson(GSERIALIZED *geom, size_t m_dec_digits) {
@@ -176,6 +178,149 @@ GSERIALIZED *Geometry::FromGeoHash(string_t hash, int precision) {
 GSERIALIZED *Geometry::LWGEOM_boundary(GSERIALIZED *geom) {
 	Postgis postgis;
 	return postgis.LWGEOM_boundary(geom);
+}
+
+GSERIALIZED *Geometry::Difference(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.ST_Difference(geom1, geom2);
+}
+
+GSERIALIZED *Geometry::ClosestPoint(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.LWGEOM_closestpoint(geom1, geom2);
+}
+
+GSERIALIZED *Geometry::GeometryUnion(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.ST_Union(geom1, geom2);
+}
+
+GSERIALIZED *Geometry::GeometryUnionGArray(GSERIALIZED *gserArray[], int nelems) {
+	Postgis postgis;
+	return postgis.pgis_union_geometry_array(gserArray, nelems);
+}
+
+GSERIALIZED *Geometry::GeometryIntersection(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.ST_Intersection(geom1, geom2);
+}
+
+GSERIALIZED *Geometry::GeometrySimplify(GSERIALIZED *geom, double dist) {
+	Postgis postgis;
+	return postgis.LWGEOM_simplify2d(geom, dist);
+}
+
+GSERIALIZED *Geometry::GeometrySnapToGrid(GSERIALIZED *geom, double size) {
+	Postgis postgis;
+	return postgis.LWGEOM_snaptogrid(geom, size);
+}
+
+GSERIALIZED *Geometry::GeometryBuffer(GSERIALIZED *geom, double radius) {
+	Postgis postgis;
+	return postgis.buffer(geom, radius);
+}
+
+GSERIALIZED *Geometry::GeometryBufferText(GSERIALIZED *geom, double radius, string styles_text) {
+	Postgis postgis;
+	return postgis.buffer(geom, radius, styles_text);
+}
+
+bool Geometry::GeometryEquals(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.ST_Equals(geom1, geom2);
+}
+
+bool Geometry::GeometryContains(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.contains(geom1, geom2);
+}
+
+bool Geometry::GeometryTouches(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.touches(geom1, geom2);
+}
+
+bool Geometry::GeometryWithin(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.within(geom1, geom2);
+}
+
+bool Geometry::GeometryIntersects(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.ST_Intersects(geom1, geom2);
+}
+
+bool Geometry::GeometryCovers(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.covers(geom1, geom2);
+}
+
+bool Geometry::GeometryCoveredby(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.coveredby(geom1, geom2);
+}
+
+bool Geometry::GeometryDisjoint(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	return postgis.disjoint(geom1, geom2);
+}
+
+bool Geometry::GeometryDWithin(GSERIALIZED *geom1, GSERIALIZED *geom2, double distance) {
+	Postgis postgis;
+	return postgis.LWGEOM_dwithin(geom1, geom2, distance);
+}
+
+double Geometry::GeometryArea(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.ST_Area(geom);
+}
+
+double Geometry::GeometryArea(GSERIALIZED *geom, bool use_spheroid) {
+	Postgis postgis;
+	return postgis.geography_area(geom, use_spheroid);
+}
+
+double Geometry::GeometryAngle(GSERIALIZED *geom1, GSERIALIZED *geom2, GSERIALIZED *geom3) {
+	Postgis postgis;
+	return postgis.LWGEOM_angle(geom1, geom2, geom3);
+}
+
+double Geometry::GeometryPerimeter(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_perimeter2d_poly(geom);
+}
+
+double Geometry::GeometryPerimeter(GSERIALIZED *geom, bool use_spheroid) {
+	Postgis postgis;
+	return postgis.geography_perimeter(geom, use_spheroid);
+}
+
+double Geometry::GeometryAzimuth(GSERIALIZED *geom1, GSERIALIZED *geom2) {
+	Postgis postgis;
+	// For geometry
+	// return postgis.LWGEOM_azimuth(geom1, geom2);
+	// For geography
+	return postgis.geography_azimuth(geom1, geom2);
+}
+
+double Geometry::GeometryLength(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_length2d_linestring(geom);
+}
+
+double Geometry::GeometryLength(GSERIALIZED *geom, bool use_spheroid) {
+	Postgis postgis;
+	return postgis.geography_length(geom, use_spheroid);
+}
+
+GSERIALIZED *Geometry::GeometryBoundingBox(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_envelope(geom);
+}
+
+double Geometry::MaxDistance(GSERIALIZED *g1, GSERIALIZED *g2) {
+	Postgis postgis;
+	return postgis.LWGEOM_maxdistance2d_linestring(g1, g2);
 }
 
 int Geometry::LWGEOM_dimension(GSERIALIZED *geom) {
@@ -238,6 +383,11 @@ GSERIALIZED *Geometry::PointN(GSERIALIZED *geom, int index) {
 	return postgis.LWGEOM_pointn_linestring(geom, index);
 }
 
+GSERIALIZED *Geometry::StartPoint(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_startpoint_linestring(geom);
+}
+
 double Geometry::Distance(GSERIALIZED *g1, GSERIALIZED *g2) {
 	Postgis postgis;
 	return postgis.ST_distance(g1, g2);
@@ -248,9 +398,14 @@ double Geometry::Distance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid) {
 	return postgis.geography_distance(g1, g2, use_spheroid);
 }
 
-double Geometry::XPoint(const void *data, size_t size) {
+double Geometry::XPoint(GSERIALIZED *geom) {
 	Postgis postgis;
-	return postgis.LWGEOM_x_point(data, size);
+	return postgis.LWGEOM_x_point(geom);
+}
+
+double Geometry::YPoint(GSERIALIZED *geom) {
+	Postgis postgis;
+	return postgis.LWGEOM_y_point(geom);
 }
 
 GSERIALIZED *Geometry::Centroid(GSERIALIZED *g) {
@@ -261,6 +416,11 @@ GSERIALIZED *Geometry::Centroid(GSERIALIZED *g) {
 GSERIALIZED *Geometry::Centroid(GSERIALIZED *g, bool use_spheroid) {
 	Postgis postgis;
 	return postgis.geography_centroid(g, use_spheroid);
+}
+
+GSERIALIZED *Geometry::Convexhull(GSERIALIZED *g) {
+	Postgis postgis;
+	return postgis.convexhull(g);
 }
 
 } // namespace duckdb
