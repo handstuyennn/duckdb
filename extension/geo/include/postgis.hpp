@@ -8,6 +8,7 @@
 #include <vector>
 
 namespace duckdb {
+
 class Postgis {
 public:
 	Postgis();
@@ -68,6 +69,10 @@ public:
 	double geography_length(GSERIALIZED *geom, bool use_spheroid);
 	GSERIALIZED *LWGEOM_envelope(GSERIALIZED *geom);
 	double LWGEOM_maxdistance2d_linestring(GSERIALIZED *geom1, GSERIALIZED *geom2);
+	double geography_maxdistance(GSERIALIZED *geom1, GSERIALIZED *geom2, bool use_spheroid);
+	GSERIALIZED *LWGEOM_envelope_garray(GSERIALIZED *gserArray[], int nelems);
+
+	std::vector<int> ST_ClusterDBSCAN(GSERIALIZED *gserArray[], int nelems, double tolerance, int minpoints);
 
 	int LWGEOM_dimension(GSERIALIZED *geom);
 	std::vector<GSERIALIZED *> LWGEOM_dump(GSERIALIZED *geom);

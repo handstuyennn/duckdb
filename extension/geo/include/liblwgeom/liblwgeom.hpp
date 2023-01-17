@@ -40,13 +40,13 @@ namespace duckdb {
 #ifndef _LIBLWGEOM_H
 #define _LIBLWGEOM_H 1
 
-#if POSTGIS_PROJ_VERSION < 49
-/* Use the old (pre-2.2) geodesic functions */
-#undef PROJ_GEODESIC
-#else
-/* Enable new geodesic functions API */
-#define PROJ_GEODESIC
-#endif
+// #if POSTGIS_PROJ_VERSION < 49
+// /* Use the old (pre-2.2) geodesic functions */
+// #undef PROJ_GEODESIC
+// #else
+// /* Enable new geodesic functions API */
+// #define PROJ_GEODESIC
+// #endif
 
 // /* For PROJ6 we cache several extra values to avoid calls to proj_get_source_crs
 //  * or proj_get_target_crs since those are very costly
@@ -775,6 +775,15 @@ extern void lwgeom_add_bbox(LWGEOM *lwgeom);
  * Drop current bbox and calculate a fresh one.
  */
 extern void lwgeom_refresh_bbox(LWGEOM *lwgeom);
+
+/**
+ * Get a non-empty geometry bounding box, computing and
+ * caching it if not already there
+ *
+ * NOTE: empty geometries don't have a bounding box so
+ *       you'd still get a NULL for them.
+ */
+extern const GBOX *lwgeom_get_bbox(const LWGEOM *lwgeom);
 
 /**
  * Return true or false depending on whether a geometry has

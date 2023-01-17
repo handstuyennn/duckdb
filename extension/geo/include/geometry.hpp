@@ -95,7 +95,10 @@ public:
 	static GSERIALIZED *GeometryBoundingBox(GSERIALIZED *geom);
 	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2);
 	static double Distance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid);
-	static double MaxDistance(GSERIALIZED *g1, GSERIALIZED *g2);
+	static double MaxDistance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid = true);
+	static GSERIALIZED *GeometryExtent(GSERIALIZED *gserArray[], int nelems);
+
+	static std::vector<int> GeometryClusterDBScan(GSERIALIZED *gserArray[], int nelems, double tolerance, int minpoints);
 
 	static int LWGEOM_dimension(GSERIALIZED *geom);
 	static std::vector<GSERIALIZED *> LWGEOM_dump(GSERIALIZED *geom);
@@ -112,6 +115,5 @@ public:
 	static GSERIALIZED *StartPoint(GSERIALIZED *geom);
 	static double XPoint(GSERIALIZED *geom);
 	static double YPoint(GSERIALIZED *geom);
-
 };
 } // namespace duckdb

@@ -318,9 +318,22 @@ GSERIALIZED *Geometry::GeometryBoundingBox(GSERIALIZED *geom) {
 	return postgis.LWGEOM_envelope(geom);
 }
 
-double Geometry::MaxDistance(GSERIALIZED *g1, GSERIALIZED *g2) {
+double Geometry::MaxDistance(GSERIALIZED *g1, GSERIALIZED *g2, bool use_spheroid) {
 	Postgis postgis;
-	return postgis.LWGEOM_maxdistance2d_linestring(g1, g2);
+	// For geometry
+	// return postgis.LWGEOM_maxdistance2d_linestring(g1, g2);
+	// For Geography
+	return postgis.geography_maxdistance(g1, g2, use_spheroid);
+}
+
+GSERIALIZED *Geometry::GeometryExtent(GSERIALIZED *gserArray[], int nelems) {
+	Postgis postgis;
+	return postgis.LWGEOM_envelope_garray(gserArray, nelems);
+}
+
+std::vector<int> Geometry::GeometryClusterDBScan(GSERIALIZED *gserArray[], int nelems, double tolerance, int minpoints) {
+	Postgis postgis;
+	return postgis.ST_ClusterDBSCAN(gserArray, nelems, tolerance, minpoints);
 }
 
 int Geometry::LWGEOM_dimension(GSERIALIZED *geom) {
