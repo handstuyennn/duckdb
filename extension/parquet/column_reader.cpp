@@ -184,7 +184,6 @@ void ColumnReader::PrepareRead(parquet_filter_t &filter) {
 	dict_decoder.reset();
 	defined_decoder.reset();
 	block.reset();
-
 	PageHeader page_hdr;
 	page_hdr.read(protocol);
 
@@ -204,6 +203,10 @@ void ColumnReader::PrepareRead(parquet_filter_t &filter) {
 	default:
 		break; // ignore INDEX page type and any other custom extensions
 	}
+	ResetPage();
+}
+
+void ColumnReader::ResetPage() {
 }
 
 void ColumnReader::PreparePageV2(PageHeader &page_hdr) {
@@ -1334,7 +1337,6 @@ unique_ptr<ColumnReader> ColumnReader::CreateReader(ParquetReader &reader, const
 		    reader, type_p, schema_p, file_idx_p, max_define, max_repeat);
 	case LogicalTypeId::BLOB:
 	case LogicalTypeId::VARCHAR:
-	case LogicalTypeId::JSON:
 		return make_unique<StringColumnReader>(reader, type_p, schema_p, file_idx_p, max_define, max_repeat);
 	case LogicalTypeId::DECIMAL:
 		// we have to figure out what kind of int we need
