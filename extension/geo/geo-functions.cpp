@@ -1560,15 +1560,15 @@ static TR DifferenceScalarFunction(Vector &result, TA geom1, TB geom2) {
 	auto gser1 = Geometry::GetGserialized(geom1);
 	auto gser2 = Geometry::GetGserialized(geom2);
 	if (!gser1 || !gser2) {
-			if (gser1) {
-				Geometry::DestroyGeometry(gser1);
-			}
-			if (gser2) {
-				Geometry::DestroyGeometry(gser2);
-			}
-			throw ConversionException("Failure in geometry get difference: could not getting difference from geom");
-			return string_t();
+		if (gser1) {
+			Geometry::DestroyGeometry(gser1);
 		}
+		if (gser2) {
+			Geometry::DestroyGeometry(gser2);
+		}
+		throw ConversionException("Failure in geometry get difference: could not getting difference from geom");
+		return string_t();
+	}
 	auto gserDiff = Geometry::Difference(gser1, gser2);
 	idx_t rv_size = Geometry::GetGeometrySize(gserDiff);
 	auto base = Geometry::GetBase(gserDiff);
@@ -1602,15 +1602,15 @@ static TR ClosestPointScalarFunction(Vector &result, TA geom1, TB geom2) {
 	auto gser1 = Geometry::GetGserialized(geom1);
 	auto gser2 = Geometry::GetGserialized(geom2);
 	if (!gser1 || !gser2) {
-			if (gser1) {
-				Geometry::DestroyGeometry(gser1);
-			}
-			if (gser2) {
-				Geometry::DestroyGeometry(gser2);
-			}
-			throw ConversionException("Failure in geometry get closest point: could not getting closest point from geom");
-			return string_t();
+		if (gser1) {
+			Geometry::DestroyGeometry(gser1);
 		}
+		if (gser2) {
+			Geometry::DestroyGeometry(gser2);
+		}
+		throw ConversionException("Failure in geometry get closest point: could not getting closest point from geom");
+		return string_t();
+	}
 	auto gserClosestPoint = Geometry::ClosestPoint(gser1, gser2);
 	idx_t rv_size = Geometry::GetGeometrySize(gserClosestPoint);
 	auto base = Geometry::GetBase(gserClosestPoint);
@@ -1644,15 +1644,15 @@ static TR UnionScalarFunction(Vector &result, TA geom1, TB geom2) {
 	auto gser1 = Geometry::GetGserialized(geom1);
 	auto gser2 = Geometry::GetGserialized(geom2);
 	if (!gser1 || !gser2) {
-			if (gser1) {
-				Geometry::DestroyGeometry(gser1);
-			}
-			if (gser2) {
-				Geometry::DestroyGeometry(gser2);
-			}
-			throw ConversionException("Failure in geometry get union: could not getting union from geom");
-			return string_t();
+		if (gser1) {
+			Geometry::DestroyGeometry(gser1);
 		}
+		if (gser2) {
+			Geometry::DestroyGeometry(gser2);
+		}
+		throw ConversionException("Failure in geometry get union: could not getting union from geom");
+		return string_t();
+	}
 	auto gserUnion = Geometry::GeometryUnion(gser1, gser2);
 	idx_t rv_size = Geometry::GetGeometrySize(gserUnion);
 	auto base = Geometry::GetBase(gserUnion);
@@ -1753,15 +1753,15 @@ static TR IntersectionScalarFunction(Vector &result, TA geom1, TB geom2) {
 	auto gser1 = Geometry::GetGserialized(geom1);
 	auto gser2 = Geometry::GetGserialized(geom2);
 	if (!gser1 || !gser2) {
-			if (gser1) {
-				Geometry::DestroyGeometry(gser1);
-			}
-			if (gser2) {
-				Geometry::DestroyGeometry(gser2);
-			}
-			throw ConversionException("Failure in geometry get intersection: could not getting intersecion from geom");
-			return string_t();
+		if (gser1) {
+			Geometry::DestroyGeometry(gser1);
 		}
+		if (gser2) {
+			Geometry::DestroyGeometry(gser2);
+		}
+		throw ConversionException("Failure in geometry get intersection: could not getting intersecion from geom");
+		return string_t();
+	}
 	auto gserIntersection = Geometry::GeometryIntersection(gser1, gser2);
 	idx_t rv_size = Geometry::GetGeometrySize(gserIntersection);
 	auto base = Geometry::GetBase(gserIntersection);
