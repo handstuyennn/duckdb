@@ -272,7 +272,7 @@ string S3FileSystem::InitializeMultipartUpload(S3FileHandle &file_handle) {
 	idx_t response_buffer_len = 1000;
 	auto response_buffer = unique_ptr<char[]> {new char[response_buffer_len]};
 
-	string query_param = UrlEncode("uploads") + "=";
+	string query_param = "uploads=";
 	auto res = s3fs.PostRequest(file_handle, file_handle.path, {}, response_buffer, response_buffer_len, nullptr, 0,
 	                            query_param);
 	string result(response_buffer.get(), response_buffer_len);
@@ -292,9 +292,8 @@ string S3FileSystem::InitializeMultipartUpload(S3FileHandle &file_handle) {
 void S3FileSystem::UploadBuffer(S3FileHandle &file_handle, shared_ptr<S3WriteBuffer> write_buffer) {
 	auto &s3fs = (S3FileSystem &)file_handle.file_system;
 
-	string query_param = S3FileSystem::UrlEncode("partNumber") + "=" + to_string(write_buffer->part_no + 1) + "&" +
-	                     S3FileSystem::UrlEncode("uploadId") + "=" +
-	                     S3FileSystem::UrlEncode(file_handle.multipart_upload_id, true);
+	string query_param = "partNumber=" + to_string(write_buffer->part_no + 1) + "&" +
+	                     "uploadId=" + S3FileSystem::UrlEncode(file_handle.multipart_upload_id, true);
 	unique_ptr<ResponseWrapper> res;
 	case_insensitive_map_t<string>::iterator etag_lookup;
 
@@ -303,8 +302,8 @@ void S3FileSystem::UploadBuffer(S3FileHandle &file_handle, shared_ptr<S3WriteBuf
 		                      query_param);
 
 		if (res->code != 200) {
-			throw IOException("Unable to connect  to URL " + res->http_url + " " + res->error + " (HTTP code " +
-			                  to_string(res->code) + ")");
+			throw HTTPException(res->code, res->error, "Unable to connect to URL %s %s (HTTP code %s)", res->http_url,
+			                    res->error, to_string(res->code));
 		}
 
 		etag_lookup = res->headers.find("ETag");
@@ -431,14 +430,15 @@ void S3FileSystem::FinalizeMultipartUpload(S3FileHandle &file_handle) {
 	idx_t response_buffer_len = 1000;
 	auto response_buffer = unique_ptr<char[]> {new char[response_buffer_len]};
 
-	string query_param = UrlEncode("uploadId") + "=" + file_handle.multipart_upload_id;
+	string query_param = "uploadId=" + S3FileSystem::UrlEncode(file_handle.multipart_upload_id, true);
 	auto res = s3fs.PostRequest(file_handle, file_handle.path, {}, response_buffer, response_buffer_len,
 	                            (char *)body.c_str(), body.length(), query_param);
 	string result(response_buffer.get(), response_buffer_len);
 
 	auto open_tag_pos = result.find("<CompleteMultipartUploadResult", 0);
 	if (open_tag_pos == string::npos) {
-		throw IOException("Unexpected response during S3 multipart upload finalization");
+		throw HTTPException(res->code, res->error, "Unexpected response during S3 multipart upload finalization: %d",
+		                    res->code);
 	}
 	file_handle.upload_finalized = true;
 }
@@ -997,9 +997,8 @@ string AWSListObjectV2::Request(string &path, HTTPParams &http_params, S3AuthPar
 	    listobjectv2_url.c_str(), *headers,
 	    [&](const duckdb_httplib_openssl::Response &response) {
 		    if (response.status >= 400) {
-			    std::cerr << response.reason << std::endl;
-			    throw IOException("HTTP GET error on '" + listobjectv2_url + "' (HTTP " +
-			                      std::to_string(response.status) + ")");
+			    throw HTTPException(response.status, response.body, "HTTP GET error on '%s' (HTTP %s)",
+			                        listobjectv2_url, response.status);
 		    }
 		    return true;
 	    },
