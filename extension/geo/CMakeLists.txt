@@ -28,6 +28,8 @@ set(GEO_EXTENSION_FILES
     postgis/lwgeom_box.cpp
     postgis/lwgeom_dump.cpp
     postgis/lwgeom_window.cpp
+    postgis/geography_inout.cpp
+    postgis/gserialized_typmod.cpp
     liblwgeom/lwin_wkt.cpp
     liblwgeom/lwin_wkb.cpp
     liblwgeom/lwutil.cpp
@@ -74,8 +76,10 @@ set(GEO_EXTENSION_FILES
     lib/ryu.cpp)
 
 add_library(geo_extension STATIC ${GEO_EXTENSION_FILES})
-set(INGORE_WARNINGS OFF)
-build_loadable_extension(geo ${GEO_EXTENSION_FILES} ${IGNORE_WARNINGS})
+link_threads(geo_extension)
+disable_target_warnings(geo_extension)
+set(PARAMETERS "-no-warnings")
+build_loadable_extension(geo ${PARAMETERS} ${GEO_EXTENSION_FILES})
 
 install(
   TARGETS geo_extension

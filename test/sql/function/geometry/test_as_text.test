@@ -30,7 +30,7 @@ INSERT INTO geographies VALUES(''), (NULL)
 query R
 select ST_ASTEXT(g) from geographies
 ----
-NULL
+(empty)
 NULL
 
 query I
@@ -46,7 +46,7 @@ NULL
 query I
 SELECT ST_ASTEXT('')
 ----
-NULL
+(empty)
 
 #test with invalid input
 statement error

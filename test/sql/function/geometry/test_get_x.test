@@ -27,7 +27,7 @@ SELECT ST_X('{"type":"Point","coordinates":[-71.064544,10.2323]}')
 query I
 SELECT ST_X('')
 ----
-NULL
+0.0
 
 query I 
 SELECT ST_X(NULL)
@@ -63,6 +63,6 @@ SELECT ST_X(g) FROM geographies
 30.0
 -71.064544
 -71.064544
-NULL
+0.0
 NULL
 10.0
