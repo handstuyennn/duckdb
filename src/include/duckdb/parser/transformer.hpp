@@ -21,6 +21,7 @@
 
 #include "pg_definitions.hpp"
 #include "nodes/parsenodes.hpp"
+#include "nodes/primnodes.hpp"
 
 namespace duckdb {
 
@@ -32,6 +33,7 @@ struct CommonTableExpressionInfo;
 struct GroupingExpressionMap;
 class OnConflictInfo;
 class UpdateSetInfo;
+struct ParserOptions;
 struct PivotColumn;
 
 //! The transformer class is responsible for transforming the internal Postgres
@@ -46,7 +48,7 @@ class Transformer {
 	};
 
 public:
-	explicit Transformer(idx_t max_expression_depth_p);
+	explicit Transformer(ParserOptions &options);
 	explicit Transformer(Transformer *parent);
 	~Transformer();
 
@@ -60,7 +62,8 @@ public:
 
 private:
 	Transformer *parent;
-	idx_t max_expression_depth;
+	//! Parser options
+	ParserOptions &options;
 	//! The current prepared statement parameter index
 	idx_t prepared_statement_parameter_index = 0;
 	//! Map from named parameter to parameter index;
@@ -239,6 +242,7 @@ private:
 	//! Transform a positional reference (e.g. #1)
 	unique_ptr<ParsedExpression> TransformPositionalReference(duckdb_libpgquery::PGPositionalReference *node);
 	unique_ptr<ParsedExpression> TransformStarExpression(duckdb_libpgquery::PGNode *node);
+	unique_ptr<ParsedExpression> TransformBooleanTest(duckdb_libpgquery::PGBooleanTest *node);
 
 	//! Transform a Postgres constant value into an Expression
 	unique_ptr<ParsedExpression> TransformConstant(duckdb_libpgquery::PGAConst *c);
@@ -290,7 +294,7 @@ private:
 	                                                  CommonTableExpressionInfo &info);
 
 	unique_ptr<ParsedExpression> TransformUnaryOperator(const string &op, unique_ptr<ParsedExpression> child);
-	unique_ptr<ParsedExpression> TransformBinaryOperator(const string &op, unique_ptr<ParsedExpression> left,
+	unique_ptr<ParsedExpression> TransformBinaryOperator(string op, unique_ptr<ParsedExpression> left,
 	                                                     unique_ptr<ParsedExpression> right);
 	//===--------------------------------------------------------------------===//
 	// TableRef transform
